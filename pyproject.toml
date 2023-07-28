@@ -1,6 +1,6 @@
 [project]
 name = "rebasicspy"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A simple implementation of reBASICS in Python"
 authors = [
     {name = "Hiroshi Atsuta", email = "atsuta@ieee.org"},
@@ -36,6 +36,9 @@ test = [
     "pytest>=7.4.0",
     "ipython>=8.14.0",
 ]
+[tool.pdm.version]
+source = "file"
+path = "src/rebasicspy/__init__.py"
 
 [toolpytest.ini_options]
 pythonpath = [
