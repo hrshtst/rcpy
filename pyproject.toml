@@ -1,0 +1,41 @@
+[project]
+name = "rebasicspy"
+version = "0.1.0"
+description = "A simple implementation of reBASICS in Python"
+authors = [
+    {name = "Hiroshi Atsuta", email = "atsuta@ieee.org"},
+]
+dependencies = []
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[tool.black]
+line-length = 120
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+]
+extraPaths = [
+    "__pypackages__/3.10/lib",
+    "__pypackages__/3.11/lib",
+    ".venv",
+]
+
+[toolpytest.ini_options]
+pythonpath = [
+    "src",
+]
+testpaths = [
+    "tests",
+]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
