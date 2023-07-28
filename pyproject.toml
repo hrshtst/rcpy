@@ -34,6 +34,7 @@ extraPaths = [
 [tool.pdm.dev-dependencies]
 test = [
     "pytest>=7.4.0",
+    "ipython>=8.14.0",
 ]
 
 [toolpytest.ini_options]
