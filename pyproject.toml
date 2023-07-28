@@ -5,7 +5,10 @@ description = "A simple implementation of reBASICS in Python"
 authors = [
     {name = "Hiroshi Atsuta", email = "atsuta@ieee.org"},
 ]
-dependencies = []
+dependencies = [
+    "numpy>=1.25.1",
+    "scipy>=1.9.3",
+]
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
@@ -26,6 +29,11 @@ extraPaths = [
     "__pypackages__/3.10/lib",
     "__pypackages__/3.11/lib",
     ".venv",
+]
+
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest>=7.4.0",
 ]
 
 [toolpytest.ini_options]
