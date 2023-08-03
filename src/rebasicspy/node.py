@@ -65,6 +65,12 @@ class Node(object, metaclass=MetaNodeRegistry):
         self._id = self.__class__.get_id()
         self._name = f"{self.__class__.default_name}_{self._id}"
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name}, {self.id})"
+
+    def __str__(self) -> str:
+        return self.name
+
     @property
     def name(self) -> str:
         """Return the name assigned to the instance."""

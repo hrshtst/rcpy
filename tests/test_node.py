@@ -6,6 +6,14 @@ class TestNode:
         node = Node()
         assert node.name == "node_0"
 
+    def test_repr(self):
+        node = Node()
+        assert repr(node) == "Node(node_0, 0)"
+
+    def test_str(self):
+        node = Node()
+        assert str(node) == "node_0"
+
     def test_auto_assigned_id(self):
         n1 = Node()
         assert n1.id == 0
