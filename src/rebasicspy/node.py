@@ -20,6 +20,9 @@ class MetaNodeRegistry(type):
 
         return inst
 
+    def __iter__(cls):
+        return cls.get_iter(recursive=False)
+
     def get_instances(cls, recursive=False):
         """Get all Node instaces in the registry.
 
@@ -40,6 +43,13 @@ class MetaNodeRegistry(type):
         metaclass.
         """
         return len(cls.get_instances(recursive=recursive))
+
+    def get_iter(cls, recursive=False):
+        """Get an iterator of instances of the class.
+
+        If recursive=True, search subclasses recursively.
+        """
+        return iter(cls.get_instances(recursive=recursive))
 
 
 class Node(object, metaclass=MetaNodeRegistry):

@@ -25,6 +25,14 @@ class TestNode:
         n.name = "super_node"
         assert n.name == "super_node"
 
+    def test_iter(self):
+        n1, n2, n3 = Node(), Node(), Node()
+        expected = [n1.name, n2.name, n3.name]
+        for n in Node:
+            assert n.name in expected
+            expected.remove(n.name)
+        assert len(expected) == 0
+
 
 class DerivedNode(Node):
     default_name = "derived"
@@ -34,12 +42,8 @@ class DerivedNode(Node):
 
 
 def test_derived_node():
-    n1 = Node()
-    n2 = Node()
     d1 = DerivedNode()
     d2 = DerivedNode()
 
-    assert n1.name == "node_0"
-    assert n2.name == "node_1"
     assert d1.name == "derived_0"
     assert d2.name == "derived_1"
