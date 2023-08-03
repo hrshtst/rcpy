@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import weakref
 
 
@@ -77,3 +79,13 @@ class Node(object, metaclass=MetaNodeRegistry):
     def id(self) -> int:
         """Return the ID assigned to the instance."""
         return self._id
+
+    @classmethod
+    def find(cls, name: str) -> Node | None:
+        """Find a node instance by the name.
+
+        If nothing found, it returns None.
+        """
+        for node in cls:
+            if node.name == name:
+                return node

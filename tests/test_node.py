@@ -33,6 +33,16 @@ class TestNode:
             expected.remove(n.name)
         assert len(expected) == 0
 
+    def test_find(self):
+        nodes = [Node() for _ in range(5)]
+        found = Node.find("node_2")
+        assert found is nodes[2]
+
+    def test_find_not_found(self):
+        _ = [Node() for _ in range(5)]
+        found = Node.find("non_exist")
+        assert found is None
+
 
 class DerivedNode(Node):
     default_name = "derived"
