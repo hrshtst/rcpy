@@ -1,4 +1,4 @@
-from rebasicspy.node import Node
+from rebasicspy.node import Model, Node
 
 
 class TestNode:
@@ -65,3 +65,74 @@ def test_derived_node():
 
     assert d1.name == "derived_0"
     assert d2.name == "derived_1"
+
+
+class TestModel:
+    def test_init(self):
+        model = Model()
+        assert model.graph == {}
+
+    def test_add(self):
+        n = Node()
+        m = Model()
+        m.add(n)
+        assert n in m.graph
+        assert m.graph[n] == []
+
+    def test_add_exists_already(self):
+        n = Node()
+        m = Model()
+        m.add(n)
+        m.add(n)
+        assert n in m.graph
+        assert m.graph[n] == []
+
+    def test_connect_1(self):
+        n1 = Node()
+        n2 = Node()
+        m = Model()
+        m.connect(n1, n2)
+        assert m.graph[n1] == [n2]
+        assert m.graph[n2] == []
+
+    def test_connect_2(self):
+        n1, n2, n3 = Node(), Node(), Node()
+        m = Model()
+        m.connect(n1, n2)
+        m.connect(n2, n3)
+        assert m.graph[n1] == [n2]
+        assert m.graph[n2] == [n3]
+        assert m.graph[n3] == []
+
+    def test_connect_3(self):
+        n1, n2, n3 = Node(), Node(), Node()
+        m = Model()
+        m.connect(n1, n2)
+        m.connect(n1, n3)
+        assert m.graph[n1] == [n2, n3]
+        assert m.graph[n2] == []
+        assert m.graph[n3] == []
+
+    def test_connect_exists_already(self):
+        n1, n2, n3 = Node(), Node(), Node()
+        m = Model()
+        m.connect(n1, n2)
+        m.connect(n1, n3)
+        assert m.graph[n1] == [n2, n3]
+        assert m.graph[n2] == []
+        assert m.graph[n3] == []
+        m.connect(n1, n2)
+        assert m.graph[n1] == [n2, n3]
+        assert m.graph[n2] == []
+        assert m.graph[n3] == []
+
+    def test_no_change_in_graph_when_connect_and_add(self):
+        n1 = Node()
+        n2 = Node()
+        m = Model()
+        m.connect(n1, n2)
+        assert m.graph[n1] == [n2]
+        assert m.graph[n2] == []
+        m.add(n1)
+        assert m.graph[n1] == [n2]
+        assert m.graph[n2] == []

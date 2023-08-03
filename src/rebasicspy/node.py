@@ -95,3 +95,26 @@ class Node(object, metaclass=MetaNodeRegistry):
         for node in cls:
             if node.name == name:
                 return node
+
+
+class Model(object):
+    """Model class consisted in multiple nodes."""
+
+    graph: dict[Node, list[Node]]
+
+    def __init__(self):
+        self.graph = {}
+
+    def add(self, node: Node) -> Model:
+        """Add a node to Model."""
+        self.graph.setdefault(node, [])
+        return self
+
+    def connect(self, from_node: Node, to_node: Node) -> Model:
+        """Connect between two nodes."""
+        self.add(from_node)
+        self.add(to_node)
+        edges = self.graph[from_node]
+        if not to_node in edges:
+            edges.append(to_node)
+        return self
