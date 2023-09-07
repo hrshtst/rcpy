@@ -25,11 +25,8 @@ exclude = [
     "**/node_modules",
     "**/__pycache__",
 ]
-extraPaths = [
-    "__pypackages__/3.10/lib",
-    "__pypackages__/3.11/lib",
-    ".venv",
-]
+venvPath = "."
+venv = ".venv"
 
 [tool.pdm.dev-dependencies]
 test = [
