@@ -1,8 +1,9 @@
-from typing import Iterable, Literal, TypeVar, overload
+from typing import Iterable, Literal, overload
 
 import numpy as np
 from scipy import sparse
-from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, spmatrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
+from scipy.sparse._base import _spbase
 
 WeightsType = np.ndarray | csr_matrix | csc_matrix | coo_matrix
 
@@ -62,7 +63,7 @@ def initialize_weights(
     connectivity: float | None = None,
     scaling: float | Iterable[float] | None = None,
     sparsity_type: Literal["dense", "csr", "csc", "coo"] = "csr",
-) -> WeightsType | spmatrix:
+) -> WeightsType | _spbase:
     if connectivity is None:
         connectivity = 0.1
     matrix = sparse.random(
