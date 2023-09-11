@@ -5,6 +5,14 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 
 @pytest.mark.parametrize(
+    "shape,sparsity_type", [((10, 10), "dense"), ((10, 1), "csr"), ((1, 10), "csc"), ((20, 20), "coo")]
+)
+def test_initialize_weights_return_specified_shape(shape: tuple[int, int], sparsity_type):
+    w = initialize_weights(shape, sparsity_type=sparsity_type)
+    assert w.shape == shape
+
+
+@pytest.mark.parametrize(
     "sparsity_type,expected_type",
     [("dense", np.ndarray), ("csr", csr_matrix), ("csc", csc_matrix), ("coo", coo_matrix)],
 )
