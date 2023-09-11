@@ -5,7 +5,7 @@ from scipy import sparse
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 from scipy.sparse._base import _spbase
 
-WeightsType = np.ndarray | csr_matrix | csc_matrix | coo_matrix
+from ._type import WeightsType
 
 
 @overload
