@@ -1,6 +1,11 @@
 from typing import Iterable, Literal, overload
 
 import numpy as np
+import scipy.linalg as la
+import scipy.sparse.linalg as spla
+from scipy.sparse import issparse
+
+from ._type import WeightsType
 
 
 @overload
@@ -39,3 +44,13 @@ def mean_squared_error(
     if raw_values:
         return errors
     return np.average(errors)
+
+
+def spectral_radius(weights: WeightsType, maxiter: int | None = None) -> float:
+    if issparse(weights):
+        if maxiter is None:
+            maxiter = weights.shape[0] * 20
+        eigvals = spla.eigs(weights, k=1, which="LM", maxiter=maxiter, return_eigenvectors=False)
+    else:
+        eigvals = la.eigvals(weights)
+    return np.max(np.abs(eigvals))

@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal
-from rebasicspy.metrics import mean_squared_error
+from rebasicspy.metrics import mean_squared_error, spectral_radius
+from scipy.sparse import coo_matrix
 
 
 @pytest.mark.parametrize(
@@ -110,3 +111,18 @@ def test_mean_squared_error_calculate_raw_values_of_rooted_mse_with_two_dimensio
 ):
     output: np.ndarray = mean_squared_error(y, y_target, root=True, raw_values=True)
     assert_almost_equal(output, expected)
+
+
+def test_spectral_radius_with_dense_array():
+    w = np.array([[1, 2, 3], [3, 2, 1], [2, 1, 3]])
+    sr = spectral_radius(w)
+    assert sr == pytest.approx(6)
+
+
+def test_spectral_radius_with_sparse_array():
+    row = np.array([0, 3, 1, 0])
+    col = np.array([0, 3, 1, 2])
+    data = np.array([4, 5, 7, 9])
+    w = coo_matrix((data, (row, col)), shape=(4, 4), dtype=float)
+    sr = spectral_radius(w)
+    assert sr == pytest.approx(7)
