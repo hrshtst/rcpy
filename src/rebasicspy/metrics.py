@@ -5,7 +5,7 @@ import scipy.linalg as la
 import scipy.sparse.linalg as spla
 from scipy.sparse import issparse
 
-from ._type import WeightsType
+from rebasicspy._type import WeightsType
 
 
 @overload
