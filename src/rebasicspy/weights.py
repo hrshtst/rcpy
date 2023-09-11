@@ -62,7 +62,7 @@ def initialize_weights(
     spectral_radius: float | None = None,
     connectivity: float | None = None,
     scaling: float | Iterable[float] | None = None,
-    sparsity_type: Literal["dense", "csr", "csc", "coo"] = "csr",
+    sparsity_type: Literal["dense", "csr", "csc", "coo"] = "dense",
 ) -> WeightsType | _spbase:
     if connectivity is None:
         connectivity = 0.1
