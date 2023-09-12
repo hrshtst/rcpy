@@ -3,7 +3,7 @@ from typing import Literal
 
 import numpy as np
 import pytest
-from rebasicspy.weights import initialize_weights, sparse_random, uniform
+from rebasicspy.weights import bernoulli, initialize_weights, normal, sparse_random, uniform
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 
@@ -74,6 +74,26 @@ def test_uniform_specifiy_low_and_high(low: float, high: float):
 def test_uniform_raise_exception_when_low_is_bigger_than_high():
     with pytest.raises(ValueError):
         _ = uniform((3, 3), low=1, high=-1, connectivity=1.0)
+
+
+@pytest.mark.parametrize("loc,scale", [(0.0, 1.0), (0.0, 2.0)])
+def test_normal_specifiy_loc_and_scale(loc: float, scale: float):
+    w = normal((20, 20), loc=loc, scale=scale, connectivity=1.0)
+    hist = np.histogram(w, bins=9)
+    assert np.max(hist[0]) == hist[0][4]
+
+
+@pytest.mark.parametrize("p", [0.5, 0.3, 0.8])
+def test_bernoulli_specifiy_p(p: float):
+    w = bernoulli((10, 10), p=p, connectivity=1.0)
+    for i in np.ravel(w):
+        assert i == 1.0 or i == -1.0
+
+
+@pytest.mark.parametrize("p", [-0.1, 1.1])
+def test_bernoulli_raise_exception_when_unexpected_p_given(p: float):
+    with pytest.raises(ValueError):
+        _ = bernoulli((10, 10), p=p, connectivity=1.0)
 
 
 @pytest.mark.parametrize("sr", [0.95, 1.0, 1.3])

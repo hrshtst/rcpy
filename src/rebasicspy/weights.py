@@ -132,6 +132,90 @@ def uniform(
     )
 
 
+@overload
+def normal(
+    shape: tuple[int, ...],
+    loc: float = ...,
+    scale: float = ...,
+    connectivity: float | None = ...,
+    sparsity_type: Literal["dense"] = ...,
+    seed: int | Generator | None = ...,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def normal(
+    shape: tuple[int, ...],
+    loc: float = ...,
+    scale: float = ...,
+    connectivity: float | None = ...,
+    sparsity_type: Literal["csr", "csc", "coo"] = ...,
+    seed: int | Generator | None = ...,
+) -> csr_matrix | csc_matrix | coo_matrix:
+    ...
+
+
+def normal(
+    shape: tuple[int, ...],
+    loc: float = 0.0,
+    scale: float = 1.0,
+    connectivity: float | None = None,
+    sparsity_type: SparsityType = "dense",
+    seed: int | Generator | None = None,
+) -> WeightsType:
+    return sparse_random(
+        shape,
+        distribution="norm",
+        connectivity=connectivity,
+        sparsity_type=sparsity_type,
+        seed=seed,
+        loc=loc,
+        scale=scale,
+    )
+
+
+@overload
+def bernoulli(
+    shape: tuple[int, ...],
+    p: float = ...,
+    connectivity: float | None = ...,
+    sparsity_type: Literal["dense"] = ...,
+    seed: int | Generator | None = ...,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def bernoulli(
+    shape: tuple[int, ...],
+    p: float = ...,
+    connectivity: float | None = ...,
+    sparsity_type: Literal["csr", "csc", "coo"] = ...,
+    seed: int | Generator | None = ...,
+) -> csr_matrix | csc_matrix | coo_matrix:
+    ...
+
+
+def bernoulli(
+    shape: tuple[int, ...],
+    p: float = 0.5,
+    connectivity: float | None = None,
+    sparsity_type: SparsityType = "dense",
+    seed: int | Generator | None = None,
+) -> WeightsType:
+    if 1 < p or p < 0:
+        raise ValueError("'p' must be <= 1 and >= 0.")
+    return sparse_random(
+        shape,
+        distribution="custom_bernoulli",
+        connectivity=connectivity,
+        sparsity_type=sparsity_type,
+        seed=seed,
+        p=p,
+    )
+
+
 def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
     current_sr = spectral_radius(weights)
     if -_epsilon < current_sr < _epsilon:
