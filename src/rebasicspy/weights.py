@@ -1,11 +1,11 @@
-from typing import Iterable, Literal, overload
+from typing import Callable, Iterable, Literal, overload
 
 import numpy as np
 from numpy.random import Generator
 from scipy import sparse
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
-from rebasicspy._type import WeightsType, WeightsTypeVar
+from rebasicspy._type import SparsityType, WeightsType
 from rebasicspy.metrics import spectral_radius
 from rebasicspy.random import get_rng, get_rvs
 
@@ -13,11 +13,9 @@ _epsilon = 1e-8  # avoid division by zero when rescaling spectral radius
 
 
 @overload
-def initialize_weights(
+def sparse_random(
     shape: tuple[int, ...],
     distribution: str = ...,
-    spectral_radius: float | None = ...,
-    scaling: float | Iterable[float] | None = ...,
     connectivity: float | None = ...,
     sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
@@ -27,11 +25,9 @@ def initialize_weights(
 
 
 @overload
-def initialize_weights(
+def sparse_random(
     shape: tuple[int, ...],
     distribution: str = ...,
-    spectral_radius: float | None = ...,
-    scaling: float | Iterable[float] | None = ...,
     connectivity: float | None = ...,
     sparsity_type: Literal["csr"] = ...,
     seed: int | Generator | None = ...,
@@ -41,11 +37,9 @@ def initialize_weights(
 
 
 @overload
-def initialize_weights(
+def sparse_random(
     shape: tuple[int, ...],
     distribution: str = ...,
-    spectral_radius: float | None = ...,
-    scaling: float | Iterable[float] | None = ...,
     connectivity: float | None = ...,
     sparsity_type: Literal["csc"] = ...,
     seed: int | Generator | None = ...,
@@ -55,11 +49,9 @@ def initialize_weights(
 
 
 @overload
-def initialize_weights(
+def sparse_random(
     shape: tuple[int, ...],
     distribution: str = ...,
-    spectral_radius: float | None = ...,
-    scaling: float | Iterable[float] | None = ...,
     connectivity: float | None = ...,
     sparsity_type: Literal["coo"] = ...,
     seed: int | Generator | None = ...,
@@ -68,13 +60,11 @@ def initialize_weights(
     ...
 
 
-def initialize_weights(
+def sparse_random(
     shape: tuple[int, ...],
     distribution: str = "uniform",
-    spectral_radius: float | None = None,
-    scaling: float | Iterable[float] | None = None,
     connectivity: float | None = None,
-    sparsity_type: Literal["dense", "csr", "csc", "coo"] = "dense",
+    sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
     **kwargs,
 ) -> WeightsType:
@@ -94,14 +84,93 @@ def initialize_weights(
         data_rvs=rvs,
         dtype=float,
     )
-    if spectral_radius is not None:
-        weights = _scale_spectral_radius(weights, spectral_radius)
     return weights
 
 
-def _scale_spectral_radius(weights: WeightsTypeVar, sr: float) -> WeightsTypeVar:
+def uniform(
+    shape: tuple[int, ...],
+    low: float = -1.0,
+    high: float = 1.0,
+    connectivity: float | None = None,
+    sparsity_type: SparsityType = "dense",
+    seed: int | Generator | None = None,
+) -> WeightsType:
+    return sparse_random(
+        shape,
+        distribution="uniform",
+        connectivity=connectivity,
+        sparsity_type=sparsity_type,
+        seed=seed,
+    )
+
+
+def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
     current_sr = spectral_radius(weights)
     if -_epsilon < current_sr < _epsilon:
         current_sr = _epsilon
     weights *= sr / current_sr
     return weights
+
+
+@overload
+def initialize_weights(
+    shape: tuple[int, ...],
+    w_initializer: Callable[..., WeightsType],
+    spectral_radius: float | None = ...,
+    input_scaling: float | Iterable[float] | None = ...,
+    sparsity_type: Literal["dense"] = ...,
+    **kwargs,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def initialize_weights(
+    shape: tuple[int, ...],
+    w_initializer: Callable[..., WeightsType],
+    spectral_radius: float | None = ...,
+    input_scaling: float | Iterable[float] | None = ...,
+    sparsity_type: Literal["csr"] = ...,
+    **kwargs,
+) -> csr_matrix:
+    ...
+
+
+@overload
+def initialize_weights(
+    shape: tuple[int, ...],
+    w_initializer: Callable[..., WeightsType],
+    spectral_radius: float | None = ...,
+    input_scaling: float | Iterable[float] | None = ...,
+    sparsity_type: Literal["csc"] = ...,
+    **kwargs,
+) -> csc_matrix:
+    ...
+
+
+@overload
+def initialize_weights(
+    shape: tuple[int, ...],
+    w_initializer: Callable[..., WeightsType],
+    spectral_radius: float | None = ...,
+    input_scaling: float | Iterable[float] | None = ...,
+    sparsity_type: Literal["coo"] = ...,
+    **kwargs,
+) -> coo_matrix:
+    ...
+
+
+def initialize_weights(
+    shape: tuple[int, ...],
+    w_initializer: Callable[..., WeightsType],
+    spectral_radius: float | None = None,
+    input_scaling: float | Iterable[float] | None = None,
+    sparsity_type: SparsityType = "dense",
+    **kwargs,
+) -> WeightsType:
+    w = w_initializer(shape, sparsity_type=sparsity_type, **kwargs)
+    if spectral_radius is not None:
+        w = _scale_spectral_radius(w, spectral_radius)
+    # if input_scaling is not None:
+    #     w = _scale_input_scaling(w, input_scaling)
+    return w
