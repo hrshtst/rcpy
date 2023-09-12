@@ -11,9 +11,8 @@ def test_set_seed():
 
 
 def test_set_seed_raise_exception_when_seed_is_not_int():
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(TypeError):
         _ = set_seed(1.0)  # type: ignore
-    print(ex.value)
 
 
 @pytest.mark.parametrize("seed", [None, 0, 123])
@@ -38,9 +37,8 @@ def test_get_rng_when_seed_is_genrator_return_itself():
 
 
 def test_get_rng_raise_exception_when_seed_is_unexpected_type():
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(TypeError):
         _ = get_rng(1.0)  # type: ignore
-    print(ex.value)
 
 
 def test_noise_normal_distribution():
