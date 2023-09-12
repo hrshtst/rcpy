@@ -64,6 +64,18 @@ def test_sparse_random_no_warning_raised_when_very_small_connectivity():
         _ = sparse_random((100, 100), connectivity=connectivity, sparsity_type="coo")
 
 
+@pytest.mark.parametrize("low,high", [(-1.0, 1.0), (-0.1, 0.1), (0.0, 1.0)])
+def test_uniform_specifiy_low_and_high(low: float, high: float):
+    w = uniform((3, 3), low=low, high=high, connectivity=1.0)
+    for i in np.ravel(w):
+        assert low < i < high
+
+
+def test_uniform_raise_exception_when_low_is_bigger_than_high():
+    with pytest.raises(ValueError):
+        _ = uniform((3, 3), low=1, high=-1, connectivity=1.0)
+
+
 @pytest.mark.parametrize("sr", [0.95, 1.0, 1.3])
 @pytest.mark.parametrize(
     "sparsity_type,expected_type",

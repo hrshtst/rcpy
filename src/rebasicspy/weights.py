@@ -87,6 +87,30 @@ def sparse_random(
     return weights
 
 
+@overload
+def uniform(
+    shape: tuple[int, ...],
+    low: float = ...,
+    high: float = ...,
+    connectivity: float | None = ...,
+    sparsity_type: Literal["dense"] = ...,
+    seed: int | Generator | None = ...,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def uniform(
+    shape: tuple[int, ...],
+    low: float = ...,
+    high: float = ...,
+    connectivity: float | None = ...,
+    sparsity_type: Literal["csr", "csc", "coo"] = ...,
+    seed: int | Generator | None = ...,
+) -> csr_matrix | csc_matrix | coo_matrix:
+    ...
+
+
 def uniform(
     shape: tuple[int, ...],
     low: float = -1.0,
@@ -95,12 +119,16 @@ def uniform(
     sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
 ) -> WeightsType:
+    if low > high:
+        raise ValueError(f"`high` boundary expected to be bigger than `low` boundary.")
     return sparse_random(
         shape,
         distribution="uniform",
         connectivity=connectivity,
         sparsity_type=sparsity_type,
         seed=seed,
+        loc=low,
+        scale=high - low,
     )
 
 
