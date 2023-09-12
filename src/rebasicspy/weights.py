@@ -7,6 +7,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 from rebasicspy._type import WeightsType, WeightsTypeVar
 from rebasicspy.metrics import spectral_radius
+from rebasicspy.random import get_rng, get_rvs
 
 _epsilon = 1e-8  # avoid division by zero when rescaling spectral radius
 
@@ -81,13 +82,16 @@ def initialize_weights(
         connectivity = 0.1
     elif connectivity < 0 or connectivity > 1:
         raise ValueError(f"`connectivity` expected to be 0 <= connectivity <= 1.")
+
+    rng = get_rng(seed)
+    rvs = get_rvs(rng, dist=distribution, **kwargs)
     weights = sparse.random(
         shape[0],
         shape[1],
         density=connectivity,
         format=sparsity_type,
-        # random_state=rg,
-        # data_rvs=rvs,
+        random_state=rng,
+        data_rvs=rvs,
         dtype=float,
     )
     if spectral_radius is not None:
