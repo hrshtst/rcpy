@@ -3,7 +3,7 @@ from typing import Literal
 
 import numpy as np
 import pytest
-from rebasicspy.weights import bernoulli, initialize_weights, normal, sparse_random, uniform
+from rebasicspy.weights import bernoulli, initialize_weights, normal, ones, sparse_random, uniform, zeros
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 
@@ -94,6 +94,22 @@ def test_bernoulli_specifiy_p(p: float):
 def test_bernoulli_raise_exception_when_unexpected_p_given(p: float):
     with pytest.raises(ValueError):
         _ = bernoulli((10, 10), p=p, connectivity=1.0)
+
+
+def test_ones():
+    arr = ones(5)
+    assert arr.shape == (5,)
+    assert arr.dtype == float
+    for i in arr:
+        assert i == 1.0
+
+
+def test_zeros():
+    arr = zeros(5)
+    assert arr.shape == (5,)
+    assert arr.dtype == float
+    for i in arr:
+        assert i == 0.0
 
 
 @pytest.mark.parametrize("sr", [0.95, 1.0, 1.3])

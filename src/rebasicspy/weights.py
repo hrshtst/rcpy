@@ -216,6 +216,14 @@ def bernoulli(
     )
 
 
+def ones(shape: int | tuple[int, ...]) -> np.ndarray:
+    return np.ones(shape, dtype=float)
+
+
+def zeros(shape: int | tuple[int, ...]) -> np.ndarray:
+    return np.zeros(shape, dtype=float)
+
+
 def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
     current_sr = spectral_radius(weights)
     if -_epsilon < current_sr < _epsilon:
