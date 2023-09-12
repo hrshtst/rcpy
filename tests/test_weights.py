@@ -51,6 +51,12 @@ def test_initialize_weights_if_connectivity_is_none_then_it_should_be_default_va
     assert actual == default
 
 
+@pytest.mark.parametrize("connectivity", [-0.1, 1.1])
+def test_initialize_weights_connectivity_must_be_between_zero_and_one(connectivity: float):
+    with pytest.raises(ValueError):
+        _ = initialize_weights((10, 10), connectivity=connectivity)
+
+
 @pytest.mark.parametrize("sr", [0.95, 1.0, 1.3])
 @pytest.mark.parametrize(
     "sparsity_type,expected_type",

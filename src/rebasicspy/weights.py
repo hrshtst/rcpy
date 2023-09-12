@@ -68,6 +68,8 @@ def initialize_weights(
 ) -> WeightsType:
     if connectivity is None:
         connectivity = 0.1
+    elif connectivity < 0 or connectivity > 1:
+        raise ValueError(f"`connectivity` expected to be 0 <= connectivity <= 1.")
     weights = sparse.random(
         shape[0],
         shape[1],
