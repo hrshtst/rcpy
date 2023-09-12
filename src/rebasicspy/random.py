@@ -25,3 +25,14 @@ def get_rng(seed: int | Generator | None = None) -> Generator:
     if isinstance(seed, Generator):
         return seed
     return default_rng(seed)
+
+
+def noise(
+    rng: Generator, dist: str = "normal", shape: int | tuple[int, ...] | None = None, gain: float = 1.0, **kwargs
+) -> np.ndarray:
+    if abs(gain) > 0.0:
+        return gain * getattr(rng, dist)(**kwargs, size=shape)
+    else:
+        if shape is None:
+            shape = 1
+        return np.zeros(shape, dtype=float)
