@@ -12,11 +12,12 @@ __GLOBAL_RNG: Generator = default_rng()
 def set_seed(seed: int | None):
     global __SEED
     global __GLOBAL_RNG
-    if not isinstance(seed, int):
-        pass
-    __SEED = seed
-    __GLOBAL_RNG = default_rng(__SEED)
-    np.random.seed(__SEED)
+    if isinstance(seed, int | None):
+        __SEED = seed
+        __GLOBAL_RNG = default_rng(__SEED)
+        np.random.seed(__SEED)
+    else:
+        raise TypeError(f"`seed` is expected to be an `int` or `None`, not {type(seed)}")
 
 
 def get_seed() -> int | None:
@@ -26,9 +27,12 @@ def get_seed() -> int | None:
 def get_rng(seed: int | Generator | None = None) -> Generator:
     if seed is None:
         return __GLOBAL_RNG
-    if isinstance(seed, Generator):
+    elif isinstance(seed, Generator):
         return seed
-    return default_rng(seed)
+    elif isinstance(seed, int):
+        return default_rng(seed)
+    else:
+        raise TypeError(f"`seed` is expected to be an `int` or `None`, not {type(seed)}")
 
 
 def _bernoulli_discrete_rvs(
@@ -49,7 +53,7 @@ def get_rvs(rng: int | Generator | None, dist: str, **kwargs) -> Callable:
         distribution = getattr(stats, dist)
         return partial(distribution(**kwargs).rvs, random_state=rng)
     else:
-        raise ValueError(f"'{dist}' is unavailable for probability distribution in 'scipy.stats'.")
+        raise ValueError(f"`{dist}` is unavailable for probability distribution in 'scipy.stats'.")
 
 
 def noise(
