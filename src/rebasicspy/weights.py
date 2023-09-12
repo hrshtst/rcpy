@@ -229,14 +229,6 @@ def zeros(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:
     return np.zeros(shape, dtype=float)
 
 
-def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
-    current_sr = spectral_radius(weights)
-    if -_epsilon < current_sr < _epsilon:
-        current_sr = _epsilon
-    weights *= sr / current_sr
-    return weights
-
-
 @overload
 def initialize_weights(
     shape: tuple[int, ...],
@@ -296,6 +288,42 @@ def initialize_weights(
     w = w_initializer(shape, sparsity_type=sparsity_type, **kwargs)
     if spectral_radius is not None:
         w = _scale_spectral_radius(w, spectral_radius)
-    # if input_scaling is not None:
-    #     w = _scale_input_scaling(w, input_scaling)
+    if input_scaling is not None:
+        w = _scale_inputs(w, input_scaling)
     return w
+
+
+def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
+    current_sr = spectral_radius(weights)
+    if -_epsilon < current_sr < _epsilon:
+        current_sr = _epsilon
+    weights *= sr / current_sr
+    return weights
+
+
+def _scale_inputs(weights: WeightsType, input_scaling: float | Iterable[float]) -> WeightsType:
+    if isinstance(input_scaling, float):
+        return weights * input_scaling
+
+    scaling_arr = np.array(input_scaling)
+    weights_arr: np.ndarray
+    if not isinstance(weights, np.ndarray):
+        weights_arr = weights.toarray()
+    else:
+        weights_arr = weights.copy()
+    if len(scaling_arr) == 2:
+        # When two values are given as the input scaling, the first
+        # element is multiplied by the first element of the weights as
+        # it is assumed to be corresponding to the input bias. Then
+        # the second element of the input scaling is multiplied by the
+        # rest of the weights.
+        scaled_w_bias = weights_arr[0:1] * scaling_arr[0]
+        scaled_w_rest = weights_arr[1:] * scaling_arr[1]
+        return np.vstack((scaled_w_bias, scaled_w_rest))
+    elif len(scaling_arr) == len(weights_arr):
+        # When more than two values are given as the input scaling,
+        # each element is multiplied to the weights in the
+        # element-wise way.
+        return weights_arr * scaling_arr.reshape(weights_arr.shape)
+    else:
+        raise ValueError(f"The size of `input_scaling` is mismatched with `weights`.")
