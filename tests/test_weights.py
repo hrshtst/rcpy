@@ -4,6 +4,7 @@ from typing import Literal
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
+from rebasicspy.random import get_rng
 from rebasicspy.weights import bernoulli, initialize_weights, normal, ones, sparse_random, uniform, zeros
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
@@ -79,7 +80,7 @@ def test_uniform_raise_exception_when_low_is_bigger_than_high():
 
 @pytest.mark.parametrize("loc,scale", [(0.0, 1.0), (0.0, 2.0)])
 def test_normal_specifiy_loc_and_scale(loc: float, scale: float):
-    w = normal((20, 20), loc=loc, scale=scale, connectivity=1.0)
+    w = normal((20, 20), loc=loc, scale=scale, connectivity=1.0, seed=get_rng(123))
     hist = np.histogram(w, bins=9)
     assert np.max(hist[0]) == hist[0][4]
 
