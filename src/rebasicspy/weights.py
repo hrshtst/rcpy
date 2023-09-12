@@ -84,6 +84,9 @@ def sparse_random(
         data_rvs=rvs,
         dtype=float,
     )
+
+    if isinstance(weights, np.matrix):
+        weights = np.asarray(weights)
     return weights
 
 
