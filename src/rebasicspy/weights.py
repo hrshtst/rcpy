@@ -216,11 +216,13 @@ def bernoulli(
     )
 
 
-def ones(shape: int | tuple[int, ...]) -> np.ndarray:
+def ones(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:
+    _ = kwargs
     return np.ones(shape, dtype=float)
 
 
-def zeros(shape: int | tuple[int, ...]) -> np.ndarray:
+def zeros(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:
+    _ = kwargs
     return np.zeros(shape, dtype=float)
 
 
