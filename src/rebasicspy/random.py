@@ -1,5 +1,9 @@
+from functools import partial
+from typing import Callable
+
 import numpy as np
 from numpy.random import Generator, default_rng
+from scipy import stats
 
 __SEED: int | None = None
 __GLOBAL_RNG: Generator = default_rng()
@@ -25,6 +29,27 @@ def get_rng(seed: int | Generator | None = None) -> Generator:
     if isinstance(seed, Generator):
         return seed
     return default_rng(seed)
+
+
+def _bernoulli_discrete_rvs(
+    p: float = 0.5, value: float = 1.0, random_state: int | Generator | None = None
+) -> Callable:
+    rng = get_rng(random_state)
+
+    def rvs(size: int | tuple[int, ...] | None = None):
+        return rng.choice([value, -value], p=[p, 1 - p], replace=True, size=size)
+
+    return rvs
+
+
+def get_rvs(rng: int | Generator | None, dist: str, **kwargs) -> Callable:
+    if dist == "custom_bernoulli":
+        return _bernoulli_discrete_rvs(**kwargs, random_state=rng)
+    elif dist in dir(stats):
+        distribution = getattr(stats, dist)
+        return partial(distribution(**kwargs).rvs, random_state=rng)
+    else:
+        raise ValueError(f"'{dist}' is unavailable for probability distribution in 'scipy.stats'.")
 
 
 def noise(
