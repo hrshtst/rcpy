@@ -2,6 +2,8 @@ import copy
 from dataclasses import dataclass
 from typing import Callable, Iterable
 
+import numpy as np
+
 from rebasicspy._type import SparsityType, WeightsType
 from rebasicspy.weights import initialize_weights, uniform
 
@@ -112,12 +114,29 @@ class Reservoir(object):
         if seed is None:
             seed = self._builder.seed
 
+        # Check if the given input scaling vector has correct number
+        # of elements.
+        if isinstance(input_scaling, Iterable):
+            if len(list(input_scaling)) != input_dim:
+                raise ValueError(f"The size of `input_scaling` is mismatched with `input_dim`.")
+
+        # Calculate scaling vector.
         self._has_input_bias = input_bias
+        if self.has_input_bias:
+            if isinstance(input_scaling, float):
+                scaling = [bias_scaling, input_scaling]
+            else:
+                scaling = np.insert(np.array(input_scaling), 0, bias_scaling)
+        else:
+            if isinstance(input_scaling, float):
+                scaling = input_scaling
+            else:
+                scaling = np.array(input_scaling)
 
         self._Win = initialize_weights(
             (reservoir_size, input_dim + (1 if input_bias else 0)),
             Win_init,
-            scaling=input_scaling,
+            scaling=scaling,
             connectivity=input_connectivity,
             sparsity_type=sparsity_type,
             seed=seed,

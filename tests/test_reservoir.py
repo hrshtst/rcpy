@@ -148,3 +148,18 @@ class TestReservoir:
 
         # Check if Win is an expected sparity type
         assert type(Win) is expected_type
+
+    def test_initialize_input_weights_check_bias_scaling(self, default_reservoir: Reservoir):
+        input_dim = 3
+        Win = default_reservoir.initialize_input_weights(input_dim, input_bias=True, bias_scaling=0.5)
+        assert Win.shape == (default_reservoir.size, input_dim + 1)
+
+        # the first column of weights must between [-0.5, 0.5]
+        c0: np.ndarray = Win[:, 0]  # type: ignore
+        assert np.all(c0 < 0.5)
+        assert np.all(c0 > -0.5)
+
+        # the rest of weights may be > 0.5 or < -0.5
+        rest: np.ndarray = Win[:, 1:]  # type: ignore
+        assert np.any(rest > 0.5)
+        assert np.any(rest < -0.5)
