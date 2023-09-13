@@ -8,7 +8,7 @@ from rebasicspy.weights import initialize_weights, uniform
 
 @dataclass
 class ReservoirBuilder:
-    size: int
+    reservoir_size: int
     spectral_radius: float
     connectivity: float
     leaking_rate: float
@@ -47,15 +47,15 @@ class Reservoir(object):
 
     def initialize_internal_weights(
         self,
-        size: int | None = None,
+        reservoir_size: int | None = None,
         spectral_radius: float | None = None,
         connectivity: float | None = None,
         W_init: Callable[..., WeightsType] | None = None,
         sparsity_type: SparsityType = "csr",
         seed: int | None = None,
     ) -> WeightsType:
-        if size is None:
-            size = self._builder.size
+        if reservoir_size is None:
+            reservoir_size = self._builder.reservoir_size
         if spectral_radius is None:
             spectral_radius = self._builder.spectral_radius
         if connectivity is None:
@@ -66,7 +66,7 @@ class Reservoir(object):
             seed = self._builder.seed
 
         self._W = initialize_weights(
-            (size, size),
+            (reservoir_size, reservoir_size),
             W_init,
             spectral_radius=spectral_radius,
             connectivity=connectivity,

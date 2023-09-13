@@ -3,12 +3,12 @@ import pytest
 from numpy.testing import assert_array_equal
 from rebasicspy.metrics import WeightsType
 from rebasicspy.reservoir import Reservoir, ReservoirBuilder
-from rebasicspy.weights import bernoulli, normal, uniform
+from rebasicspy.weights import normal, uniform
 from scipy.sparse import csc_matrix, csr_matrix
 
 
 def get_default_builder() -> ReservoirBuilder:
-    return ReservoirBuilder(size=15, spectral_radius=0.95, connectivity=0.2, leaking_rate=0.98)
+    return ReservoirBuilder(reservoir_size=15, spectral_radius=0.95, connectivity=0.2, leaking_rate=0.98)
 
 
 @pytest.fixture
@@ -66,17 +66,17 @@ class TestReservoir:
         assert type(W) is csr_matrix
 
     @pytest.mark.parametrize(
-        "size,sr,p,dist,sparsity,expected_type",
+        "reservoir_size,sr,p,dist,sparsity,expected_type",
         [(10, 1.3, 0.15, normal, "dense", np.ndarray), (20, 0.9, 0.1, uniform, "csc", csc_matrix)],
     )
     def test_initialize_internal_weights_reinitialize(
-        self, default_reservoir: Reservoir, size, sr, p, dist, sparsity, expected_type
+        self, default_reservoir: Reservoir, reservoir_size, sr, p, dist, sparsity, expected_type
     ):
         W0_array = ensure_ndarray(default_reservoir.W)
         W = default_reservoir.initialize_internal_weights(
-            size=size, spectral_radius=sr, connectivity=p, W_init=dist, sparsity_type=sparsity
+            reservoir_size=reservoir_size, spectral_radius=sr, connectivity=p, W_init=dist, sparsity_type=sparsity
         )
-        assert W.shape == (size, size)
+        assert W.shape == (reservoir_size, reservoir_size)
         assert actual_spectral_radius(W) == pytest.approx(sr)
         assert actual_connectivity(W) == p
         assert type(W) is expected_type
