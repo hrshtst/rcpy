@@ -234,7 +234,7 @@ def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
     spectral_radius: float | None = ...,
-    input_scaling: float | Iterable[float] | None = ...,
+    scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["dense"] = ...,
     **kwargs,
 ) -> np.ndarray:
@@ -246,7 +246,7 @@ def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
     spectral_radius: float | None = ...,
-    input_scaling: float | Iterable[float] | None = ...,
+    scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["csr"] = ...,
     **kwargs,
 ) -> csr_matrix:
@@ -258,7 +258,7 @@ def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
     spectral_radius: float | None = ...,
-    input_scaling: float | Iterable[float] | None = ...,
+    scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["csc"] = ...,
     **kwargs,
 ) -> csc_matrix:
@@ -270,7 +270,7 @@ def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
     spectral_radius: float | None = ...,
-    input_scaling: float | Iterable[float] | None = ...,
+    scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["coo"] = ...,
     **kwargs,
 ) -> coo_matrix:
@@ -281,15 +281,15 @@ def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
     spectral_radius: float | None = None,
-    input_scaling: float | Iterable[float] | None = None,
+    scaling: float | Iterable[float] | None = None,
     sparsity_type: SparsityType = "dense",
     **kwargs,
 ) -> WeightsType:
     w = w_initializer(shape, sparsity_type=sparsity_type, **kwargs)
     if spectral_radius is not None:
         w = _scale_spectral_radius(w, spectral_radius)
-    if input_scaling is not None:
-        w = _scale_inputs(w, input_scaling)
+    if scaling is not None:
+        w = _scale_inputs(w, scaling)
     return w
 
 
@@ -301,11 +301,11 @@ def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
     return weights
 
 
-def _scale_inputs(weights: WeightsType, input_scaling: float | Iterable[float]) -> WeightsType:
-    if isinstance(input_scaling, float):
-        return weights * input_scaling
+def _scale_inputs(weights: WeightsType, scaling: float | Iterable[float]) -> WeightsType:
+    if isinstance(scaling, float):
+        return weights * scaling
 
-    scaling_arr = np.array(input_scaling)
+    scaling_arr = np.array(scaling)
     weights_arr: np.ndarray
     if not isinstance(weights, np.ndarray):
         weights_arr = weights.toarray()
@@ -326,4 +326,4 @@ def _scale_inputs(weights: WeightsType, input_scaling: float | Iterable[float]) 
         # element-wise way.
         return weights_arr * scaling_arr.reshape(weights_arr.shape)
     else:
-        raise ValueError(f"The size of `input_scaling` is mismatched with `weights`.")
+        raise ValueError(f"The size of `scaling` is mismatched with `weights`.")

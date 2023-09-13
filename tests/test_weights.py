@@ -139,7 +139,7 @@ def test_initialize_weights_scale_spectral_radius_with_dense_array(sr: float):
 
 @pytest.mark.parametrize("scaling", [0.2, 5.0])
 def test_initialize_weights_scale_inputs(scaling: float):
-    w = initialize_weights((10, 1), uniform, input_scaling=scaling, sparsity_type="dense", connectivity=1.0)
+    w = initialize_weights((10, 1), uniform, scaling=scaling, sparsity_type="dense", connectivity=1.0)
     if scaling > 1.0:
         assert np.max(w) > 1.0
         assert np.min(w) < -1.0
@@ -151,7 +151,7 @@ def test_initialize_weights_scale_inputs(scaling: float):
 @pytest.mark.parametrize("scaling", [(0.1, 0.5), (2.0, 5.0)])
 def test_initialize_weights_when_two_scalings_given_they_applied_first_and_rest(scaling: tuple[float, float]):
     # When two values are given as the scaling input,
-    w = initialize_weights((5, 1), ones, input_scaling=scaling, sparsity_type="dense")
+    w = initialize_weights((5, 1), ones, scaling=scaling, sparsity_type="dense")
     # The first element (corresponding to the bias) of the initial
     # weights is multiplied by the first of scaling.
     assert_array_equal(w[0], np.array([scaling[0]]))
@@ -163,7 +163,7 @@ def test_initialize_weights_when_two_scalings_given_they_applied_first_and_rest(
 def test_initialize_weights_when_more_than_two_scalings_given_applied_elementwise():
     # When more than two values are given as the scaling input,
     scaling = np.arange(5)
-    w = initialize_weights((5, 1), ones, input_scaling=scaling, sparsity_type="dense")
+    w = initialize_weights((5, 1), ones, scaling=scaling, sparsity_type="dense")
     # The elements of the scaling input are multiplied by the initial
     # weights in the element-wise way.
     assert_array_equal(w, np.arange(5).reshape(-1, 1))
@@ -172,4 +172,4 @@ def test_initialize_weights_when_more_than_two_scalings_given_applied_elementwis
 def test_initialize_weights_raise_exception_when_shape_of_scaling_incorrect():
     scaling = np.arange(3)
     with pytest.raises(ValueError):
-        _ = initialize_weights((5, 1), ones, input_scaling=scaling, sparsity_type="dense")
+        _ = initialize_weights((5, 1), ones, scaling=scaling, sparsity_type="dense")
