@@ -3,7 +3,7 @@ from typing import Callable, Iterable, Literal, overload
 import numpy as np
 from numpy.random import Generator
 from scipy import sparse
-from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, issparse
 
 from rebasicspy._type import SparsityType, WeightsType
 from rebasicspy.metrics import spectral_radius
@@ -319,11 +319,16 @@ def _scale_inputs(weights: WeightsType, scaling: float | Iterable[float]) -> Wei
         # rest of the weights.
         scaled_w_bias = weights_arr[:, :1] * scaling_arr[0]
         scaled_w_rest = weights_arr[:, 1:] * scaling_arr[1]
-        return np.hstack((scaled_w_bias, scaled_w_rest))
+        scaled_w = np.hstack((scaled_w_bias, scaled_w_rest))
     elif len(scaling_arr) == weights_arr.shape[1]:
         # When more than two values are given as the input scaling,
         # each element is multiplied to the weights in the
         # element-wise way.
-        return weights_arr * scaling_arr
+        scaled_w = weights_arr * scaling_arr
     else:
         raise ValueError(f"The size of `scaling` is mismatched with `weights`.")
+
+    if issparse(weights):
+        return type(weights)(scaled_w)  # type: ignore
+    else:
+        return scaled_w
