@@ -15,6 +15,7 @@ class ReservoirBuilder:
     W_init: Callable[..., WeightsType] = uniform
     Win_init: Callable[..., WeightsType] = uniform
     input_scaling: float | Iterable[float] = 1.0
+    input_connectivity: float = 1.0
     input_bias: bool = True
     bias_scaling: float = 1.0
     seed: int | None = None
@@ -79,3 +80,42 @@ class Reservoir(object):
             seed=seed,
         )
         return self._W
+
+    def initialize_input_weights(
+        self,
+        input_dim: int,
+        reservoir_size: int | None = None,
+        input_scaling: float | Iterable[float] | None = None,
+        input_connectivity: float | None = None,
+        input_bias: bool | None = None,
+        bias_scaling: float | None = None,
+        Win_init: Callable[..., WeightsType] | None = None,
+        sparsity_type: SparsityType = "dense",
+        seed: int | None = None,
+    ) -> WeightsType:
+        if reservoir_size is None:
+            reservoir_size = self._builder.reservoir_size
+        if input_scaling is None:
+            input_scaling = self._builder.input_scaling
+        if input_connectivity is None:
+            input_connectivity = self._builder.input_connectivity
+        if input_bias is None:
+            input_bias = self._builder.input_bias
+        if bias_scaling is None:
+            bias_scaling = self._builder.bias_scaling
+        if Win_init is None:
+            Win_init = self._builder.Win_init
+        if seed is None:
+            seed = self._builder.seed
+
+        self._has_input_bias = input_bias
+
+        self._Win = initialize_weights(
+            (reservoir_size, input_dim + (1 if input_bias else 0)),
+            Win_init,
+            scaling=input_scaling,
+            connectivity=input_connectivity,
+            sparsity_type=sparsity_type,
+            seed=seed,
+        )
+        return self._Win

@@ -82,3 +82,67 @@ class TestReservoir:
         assert type(W) is expected_type
         with pytest.raises(AssertionError):
             assert_array_equal(W0_array, ensure_ndarray(W))
+
+    def test_initialize_input_weights(self, default_reservoir: Reservoir):
+        input_dim = 3
+        default_reservoir.initialize_input_weights(input_dim)
+        Win = default_reservoir.Win
+        assert Win.shape == (15, 4)
+
+        assert default_reservoir.has_input_bias is True
+
+        # Check if Win is sampled between [-1, 1]
+        assert np.all(Win < 1)
+        assert np.all(Win > -1)
+        assert np.any(Win < 0)
+        assert np.any(Win > 0)
+
+        # Check if Win is a dense matrix
+        assert not np.any(Win == 0.0)
+        assert type(Win) is np.ndarray
+
+    @pytest.mark.parametrize(
+        "input_dim,reservoir_size,scaling,p,input_bias,bias_scaling,dist,sparsity,expected_type",
+        [
+            (2, 10, 1.5, 0.5, False, 0.1, normal, "csr", csr_matrix),
+            (4, 20, 0.5, 0.2, True, 0.1, uniform, "csc", csc_matrix),
+        ],
+    )
+    def test_initialize_input_weights_reinitialize(
+        self,
+        default_reservoir: Reservoir,
+        input_dim,
+        reservoir_size,
+        scaling,
+        p,
+        input_bias,
+        bias_scaling,
+        dist,
+        sparsity,
+        expected_type,
+    ):
+        default_reservoir.initialize_input_weights(
+            input_dim,
+            reservoir_size=reservoir_size,
+            input_scaling=scaling,
+            input_connectivity=p,
+            input_bias=input_bias,
+            bias_scaling=bias_scaling,
+            Win_init=dist,
+            sparsity_type=sparsity,
+        )
+        Win = default_reservoir.Win
+        assert Win.shape == (reservoir_size, input_dim + (1 if input_bias else 0))
+
+        assert default_reservoir.has_input_bias is input_bias
+
+        # Check if Win is scaled by input_scaling
+        Win_array = Win.toarray()  # type: ignore
+        if dist == uniform:
+            assert np.all(Win_array < scaling)
+            assert np.all(Win_array > -scaling)
+        assert np.any(Win_array < 0)
+        assert np.any(Win_array > 0)
+
+        # Check if Win is an expected sparity type
+        assert type(Win) is expected_type
