@@ -313,17 +313,17 @@ def _scale_inputs(weights: WeightsType, scaling: float | Iterable[float]) -> Wei
         weights_arr = weights.copy()
     if len(scaling_arr) == 2:
         # When two values are given as the input scaling, the first
-        # element is multiplied by the first element of the weights as
+        # element is multiplied by the first column of the weights as
         # it is assumed to be corresponding to the input bias. Then
         # the second element of the input scaling is multiplied by the
         # rest of the weights.
-        scaled_w_bias = weights_arr[0:1] * scaling_arr[0]
-        scaled_w_rest = weights_arr[1:] * scaling_arr[1]
-        return np.vstack((scaled_w_bias, scaled_w_rest))
-    elif len(scaling_arr) == len(weights_arr):
+        scaled_w_bias = weights_arr[:, :1] * scaling_arr[0]
+        scaled_w_rest = weights_arr[:, 1:] * scaling_arr[1]
+        return np.hstack((scaled_w_bias, scaled_w_rest))
+    elif len(scaling_arr) == weights_arr.shape[1]:
         # When more than two values are given as the input scaling,
         # each element is multiplied to the weights in the
         # element-wise way.
-        return weights_arr * scaling_arr.reshape(weights_arr.shape)
+        return weights_arr * scaling_arr
     else:
         raise ValueError(f"The size of `scaling` is mismatched with `weights`.")
