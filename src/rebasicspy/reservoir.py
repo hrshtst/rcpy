@@ -15,7 +15,7 @@ class ReservoirBuilder:
     W_init: Callable[..., WeightsType] = uniform
     Win_init: Callable[..., WeightsType] = uniform
     input_scaling: float | Iterable[float] = 1.0
-    add_bias: bool = True
+    input_bias: bool = True
     bias_scaling: float = 1.0
     seed: int | None = None
 
@@ -24,6 +24,7 @@ class Reservoir(object):
     _builder: ReservoirBuilder
     _W: WeightsType
     _Win: WeightsType
+    _has_input_bias: bool
     _leaking_rate: float
     _seed: int | None
 
@@ -40,6 +41,10 @@ class Reservoir(object):
     @property
     def Win(self) -> WeightsType:
         return self._Win
+
+    @property
+    def has_input_bias(self) -> bool:
+        return self._has_input_bias
 
     @property
     def leaking_rate(self) -> float:
