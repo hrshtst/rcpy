@@ -51,6 +51,10 @@ class Reservoir(object):
     def leaking_rate(self) -> float:
         return self._leaking_rate
 
+    @property
+    def size(self) -> int:
+        return self._W.shape[0]
+
     def initialize_internal_weights(
         self,
         reservoir_size: int | None = None,

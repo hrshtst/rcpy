@@ -56,6 +56,7 @@ class TestReservoir:
     def test_initialize_internal_weights(self, default_reservoir: Reservoir):
         W = default_reservoir.W
         assert W.shape == (15, 15)
+        assert default_reservoir.size == 15
 
         expected_spectral_radius = default_reservoir._builder.spectral_radius
         assert actual_spectral_radius(W) == pytest.approx(expected_spectral_radius)
@@ -77,6 +78,7 @@ class TestReservoir:
             reservoir_size=reservoir_size, spectral_radius=sr, connectivity=p, W_init=dist, sparsity_type=sparsity
         )
         assert W.shape == (reservoir_size, reservoir_size)
+        assert default_reservoir.size == reservoir_size
         assert actual_spectral_radius(W) == pytest.approx(sr)
         assert actual_connectivity(W) == p
         assert type(W) is expected_type
