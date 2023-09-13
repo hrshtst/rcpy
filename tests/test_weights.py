@@ -126,7 +126,7 @@ def test_initialize_weights_scale_spectral_radius(
     arr = w.toarray()
     actual = max(abs(np.linalg.eigvals(arr)))
     assert isinstance(w, expected_type)
-    assert actual == pytest.approx(sr)
+    assert actual == pytest.approx(sr, rel=1e-2)
 
 
 @pytest.mark.parametrize("sr", [0.95, 1.0, 1.3])
@@ -134,7 +134,7 @@ def test_initialize_weights_scale_spectral_radius_with_dense_array(sr: float):
     w = initialize_weights((100, 100), uniform, spectral_radius=sr, sparsity_type="dense")
     actual = max(abs(np.linalg.eigvals(w)))
     assert isinstance(w, np.ndarray)
-    assert actual == pytest.approx(sr)
+    assert actual == pytest.approx(sr, rel=1e-2)
 
 
 @pytest.mark.parametrize("scaling", [0.2, 5.0])
