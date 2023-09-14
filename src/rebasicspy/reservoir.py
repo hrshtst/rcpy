@@ -50,7 +50,10 @@ class Reservoir(object):
 
     @property
     def has_input_bias(self) -> bool:
-        return not np.all(self._bias == 0.0)
+        if hasattr(self, "_bias"):
+            return not np.all(self._bias == 0.0)
+        else:
+            return self._builder.bias_scaling != 0.0
 
     @property
     def leaking_rate(self) -> float:
@@ -96,7 +99,7 @@ class Reservoir(object):
         reservoir_size: int | None = None,
         input_scaling: float | Iterable[float] | None = None,
         input_connectivity: float | None = None,
-        bias_scaling: float | None = None,
+        bias_scaling: float | bool | None = None,
         Win_init: Callable[..., WeightsType] | None = None,
         sparsity_type: SparsityType = "dense",
         seed: int | None = None,
@@ -109,6 +112,10 @@ class Reservoir(object):
             input_connectivity = self._builder.input_connectivity
         if bias_scaling is None:
             bias_scaling = self._builder.bias_scaling
+        elif bias_scaling is False:
+            bias_scaling = 0.0
+        if isinstance(bias_scaling, bool):
+            bias_scaling = float(bias_scaling)
         if Win_init is None:
             Win_init = self._builder.Win_init
         if seed is None:

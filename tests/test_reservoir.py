@@ -53,6 +53,11 @@ class TestReservoir:
     def test_init_seed(self, default_reservoir: Reservoir):
         assert default_reservoir._seed is None
 
+    def test_has_bias_input(self, default_reservoir: Reservoir):
+        assert default_reservoir.has_input_bias
+        default_reservoir.initialize_input_weights(0, bias_scaling=False)
+        assert not default_reservoir.has_input_bias
+
     def test_initialize_internal_weights(self, default_reservoir: Reservoir):
         W = default_reservoir.W
         assert W.shape == (15, 15)
