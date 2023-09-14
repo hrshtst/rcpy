@@ -18,7 +18,6 @@ class ReservoirBuilder:
     Win_init: Callable[..., WeightsType] = uniform
     input_scaling: float | Iterable[float] = 1.0
     input_connectivity: float = 1.0
-    input_bias: bool = True
     bias_scaling: float = 1.0
     seed: int | None = None
 
@@ -27,7 +26,7 @@ class Reservoir(object):
     _builder: ReservoirBuilder
     _W: WeightsType
     _Win: WeightsType
-    _has_input_bias: bool
+    _bias: np.ndarray
     _leaking_rate: float
     _seed: int | None
 
@@ -46,8 +45,12 @@ class Reservoir(object):
         return self._Win
 
     @property
+    def bias(self) -> np.ndarray:
+        return self._bias
+
+    @property
     def has_input_bias(self) -> bool:
-        return self._has_input_bias
+        return not np.all(self._bias == 0.0)
 
     @property
     def leaking_rate(self) -> float:
@@ -93,7 +96,6 @@ class Reservoir(object):
         reservoir_size: int | None = None,
         input_scaling: float | Iterable[float] | None = None,
         input_connectivity: float | None = None,
-        input_bias: bool | None = None,
         bias_scaling: float | None = None,
         Win_init: Callable[..., WeightsType] | None = None,
         sparsity_type: SparsityType = "dense",
@@ -105,8 +107,6 @@ class Reservoir(object):
             input_scaling = self._builder.input_scaling
         if input_connectivity is None:
             input_connectivity = self._builder.input_connectivity
-        if input_bias is None:
-            input_bias = self._builder.input_bias
         if bias_scaling is None:
             bias_scaling = self._builder.bias_scaling
         if Win_init is None:
@@ -120,23 +120,18 @@ class Reservoir(object):
             if len(list(input_scaling)) != input_dim:
                 raise ValueError(f"The size of `input_scaling` is mismatched with `input_dim`.")
 
-        # Calculate scaling vector.
-        self._has_input_bias = input_bias
-        if self.has_input_bias:
-            if isinstance(input_scaling, float):
-                scaling = [bias_scaling, input_scaling]
-            else:
-                scaling = np.insert(np.array(input_scaling), 0, bias_scaling)
-        else:
-            if isinstance(input_scaling, float):
-                scaling = input_scaling
-            else:
-                scaling = np.array(input_scaling)
+        # Calculate bias vector.
+        self._bias = np.ravel(
+            initialize_weights(
+                (reservoir_size, 1), Win_init, scaling=bias_scaling, connectivity=1.0, sparsity_type="dense", seed=seed
+            )
+        )
 
+        # Calculate Win matrix.
         self._Win = initialize_weights(
-            (reservoir_size, input_dim + (1 if input_bias else 0)),
+            (reservoir_size, input_dim),
             Win_init,
-            scaling=scaling,
+            scaling=input_scaling,
             connectivity=input_connectivity,
             sparsity_type=sparsity_type,
             seed=seed,

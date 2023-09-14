@@ -89,9 +89,11 @@ class TestReservoir:
         input_dim = 3
         default_reservoir.initialize_input_weights(input_dim)
         Win = default_reservoir.Win
-        assert Win.shape == (15, 4)
-
-        assert default_reservoir.has_input_bias is True
+        assert Win.shape == (15, 3)
+        assert default_reservoir.bias.shape == (15,)
+        assert default_reservoir.has_input_bias
+        assert np.all(default_reservoir.bias != 0.0)
+        assert type(default_reservoir.bias) is np.ndarray
 
         # Check if Win is sampled between [-1, 1]
         assert np.all(Win < 1)
@@ -104,10 +106,10 @@ class TestReservoir:
         assert type(Win) is np.ndarray
 
     @pytest.mark.parametrize(
-        "input_dim,reservoir_size,scaling,p,input_bias,bias_scaling,dist,sparsity,expected_type",
+        "input_dim,reservoir_size,scaling,p,bias_scaling,dist,sparsity,expected_type",
         [
-            (2, 10, 1.5, 0.5, False, 0.1, normal, "csr", csr_matrix),
-            (4, 20, 0.5, 0.2, True, 0.1, uniform, "csc", csc_matrix),
+            (2, 10, 1.5, 0.5, 0.0, normal, "csr", csr_matrix),
+            (4, 20, 0.5, 0.2, 0.1, uniform, "csc", csc_matrix),
         ],
     )
     def test_initialize_input_weights_reinitialize(
@@ -117,7 +119,6 @@ class TestReservoir:
         reservoir_size,
         scaling,
         p,
-        input_bias,
         bias_scaling,
         dist,
         sparsity,
@@ -128,15 +129,20 @@ class TestReservoir:
             reservoir_size=reservoir_size,
             input_scaling=scaling,
             input_connectivity=p,
-            input_bias=input_bias,
             bias_scaling=bias_scaling,
             Win_init=dist,
             sparsity_type=sparsity,
         )
         Win = default_reservoir.Win
-        assert Win.shape == (reservoir_size, input_dim + (1 if input_bias else 0))
+        assert Win.shape == (reservoir_size, input_dim)
 
-        assert default_reservoir.has_input_bias is input_bias
+        assert default_reservoir.bias.shape == (reservoir_size,)
+        assert default_reservoir.has_input_bias is (bias_scaling != 0.0)
+        if bias_scaling:
+            assert np.all(default_reservoir.bias != 0.0)
+        else:
+            assert_array_equal(default_reservoir.bias, np.zeros(reservoir_size))
+        assert type(default_reservoir.bias) is np.ndarray
 
         # Check if Win is scaled by input_scaling
         Win_array = Win.toarray()  # type: ignore
@@ -151,15 +157,15 @@ class TestReservoir:
 
     def test_initialize_input_weights_check_bias_scaling(self, default_reservoir: Reservoir):
         input_dim = 3
-        Win = default_reservoir.initialize_input_weights(input_dim, input_bias=True, bias_scaling=0.5)
-        assert Win.shape == (default_reservoir.size, input_dim + 1)
+        Win = default_reservoir.initialize_input_weights(input_dim, bias_scaling=0.5)
+        assert Win.shape == (default_reservoir.size, input_dim)
 
         # the first column of weights must between [-0.5, 0.5]
-        c0: np.ndarray = Win[:, 0]  # type: ignore
-        assert np.all(c0 < 0.5)
-        assert np.all(c0 > -0.5)
+        assert default_reservoir.has_input_bias
+        assert np.all(default_reservoir.bias < 0.5)
+        assert np.all(default_reservoir.bias > -0.5)
+        assert type(default_reservoir.bias) is np.ndarray
 
         # the rest of weights may be > 0.5 or < -0.5
-        rest: np.ndarray = Win[:, 1:]  # type: ignore
-        assert np.any(rest > 0.5)
-        assert np.any(rest < -0.5)
+        assert np.any(Win > 0.5)
+        assert np.any(Win < -0.5)
