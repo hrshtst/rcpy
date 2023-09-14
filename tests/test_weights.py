@@ -43,8 +43,8 @@ def test_sparse_random_specify_connectivity_with_dense_array(shape: tuple[int, i
 
 
 @pytest.mark.parametrize("sparsity_type", ["dense", "csr", "csc", "coo"])
-def test_sparse_random_if_connectivity_is_none_then_it_should_be_default_value(sparsity_type):
-    default = 0.1
+def test_sparse_random_if_connectivity_is_none_then_it_should_be_dense_array(sparsity_type):
+    default = 1.0
     w = sparse_random((10, 10), sparsity_type=sparsity_type, connectivity=None)
     if isinstance(w, np.ndarray):
         actual = np.count_nonzero(w) / w.size

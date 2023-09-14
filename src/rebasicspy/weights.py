@@ -69,7 +69,7 @@ def sparse_random(
     **kwargs,
 ) -> WeightsType:
     if connectivity is None:
-        connectivity = 0.1
+        connectivity = 1.0
     elif connectivity < 0 or connectivity > 1:
         raise ValueError(f"`connectivity` expected to be 0 <= connectivity <= 1.")
 
