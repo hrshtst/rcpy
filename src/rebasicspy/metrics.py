@@ -36,8 +36,8 @@ def mean_squared_error(
 ) -> float | np.ndarray:
     """Mean squared error."""
 
-    y = np.array(y, dtype=float)
-    y_target = np.array(y_target, dtype=float)
+    y = np.asarray(y, dtype=float)
+    y_target = np.asarray(y_target, dtype=float)
     errors = np.average((y - y_target) ** 2, axis=0)
     if root:
         errors = np.sqrt(errors)
