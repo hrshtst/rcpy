@@ -5,8 +5,29 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 from rebasicspy.random import get_rng
-from rebasicspy.weights import bernoulli, initialize_weights, normal, ones, sparse_random, uniform, zeros
+from rebasicspy.weights import WeightsType, bernoulli, initialize_weights, normal, ones, sparse_random, uniform, zeros
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
+
+
+def actual_spectral_radius(w: WeightsType) -> float:
+    if isinstance(w, np.ndarray):
+        return max(abs(np.linalg.eigvals(w)))
+    else:
+        return max(abs(np.linalg.eigvals(w.toarray())))
+
+
+def actual_connectivity(w: WeightsType) -> float:
+    if isinstance(w, np.ndarray):
+        return np.count_nonzero(w) / (w.shape[0] * w.shape[1])
+    else:
+        return w.nnz / (w.shape[0] * w.shape[1])
+
+
+def ensure_ndarray(w: WeightsType) -> np.ndarray:
+    if isinstance(w, np.ndarray):
+        return w
+    else:
+        return w.toarray()
 
 
 @pytest.mark.parametrize(
@@ -148,33 +169,51 @@ def test_initialize_weights_scale_inputs(scaling: float):
         assert np.min(w) > -scaling
 
 
-@pytest.mark.parametrize("scaling", [(0.1, 0.5), (2.0, 5.0)])
-def test_initialize_weights_when_two_scalings_given_they_applied_first_and_rest(scaling: tuple[float, float]):
-    reservoir_size = 5
-    input_dim = 2
-    # When two values are given as the scaling input,
-    w = initialize_weights((reservoir_size, input_dim + 1), ones, scaling=scaling, sparsity_type="dense")
-    # The first column (corresponding to the bias) of the initial
-    # weights is multiplied by the first of scaling.
-    assert_array_equal(w[:, 0], np.ones(reservoir_size) * scaling[0])
-    # The rest of the initial weights are multiplied by the second of
-    # scaling.
-    assert_array_equal(w[:, 1:], np.ones((reservoir_size, input_dim)) * scaling[1])
+@pytest.mark.parametrize(
+    "size,in_dim,scaling,sparsity",
+    [
+        (5, 2, 0.5, "dense"),
+        (6, 1, 0.1, "csc"),
+        (6, 3, (0.1, 0.2, 0.3), "csr"),
+        (4, 1, (0.4,), "coo"),
+    ],
+)
+def test_initialize_weights_scaling(size, in_dim, scaling, sparsity):
+    w = initialize_weights((size, in_dim), ones, scaling=scaling, sparsity_type=sparsity)
+    w_arr = ensure_ndarray(w)
+
+    if isinstance(scaling, float):
+        expected_w = np.ones((size, in_dim)) * np.array([scaling])
+    else:
+        expected_w = np.ones((size, in_dim)) * np.array(scaling)
+    assert_array_equal(w_arr, expected_w)
 
 
-def test_initialize_weights_when_more_than_two_scalings_given_applied_elementwise():
-    reservoir_size = 5
-    input_dim = 2
-    # When more than two values are given as the scaling input,
-    scaling = np.arange(input_dim + 1)
-    w = initialize_weights((reservoir_size, input_dim + 1), ones, scaling=scaling, sparsity_type="dense")
-    # The elements of the scaling input are multiplied by the initial
-    # weights in the element-wise way.
-    expected = np.repeat(np.atleast_2d(np.arange(input_dim + 1)), reservoir_size, axis=0)
-    assert_array_equal(w, expected)
+@pytest.mark.parametrize(
+    "size,in_dim,scaling,sparsity,expected_type",
+    [
+        (5, 2, 0.5, "dense", np.ndarray),
+        (6, 1, 0.1, "csc", csc_matrix),
+        (6, 3, (0.1, 0.2, 0.3), "csr", csr_matrix),
+        (4, 1, (0.4,), "coo", csr_matrix),  # coo_matrix -> csr_matrix
+    ],
+)
+def test_initialize_weights_scaling_check_type(size, in_dim, scaling, sparsity, expected_type):
+    w = initialize_weights((size, in_dim), uniform, scaling=scaling, sparsity_type=sparsity)
+    w_arr = ensure_ndarray(w)
+    assert np.all(w_arr != 0.0)
+    assert type(w) is expected_type
 
 
-def test_initialize_weights_raise_exception_when_shape_of_scaling_incorrect():
-    scaling = np.arange(3)
+@pytest.mark.parametrize(
+    "size,in_dim,scaling,sparsity",
+    [
+        (5, 2, (0.1, 0.2, 0.3), "dense"),
+        (5, 1, (0.1, 0.2), "csc"),
+        (6, 3, (0.1, 0.2), "csr"),
+        (4, 2, (0.4,), "coo"),
+    ],
+)
+def test_initialize_weights_raise_exception_when_shape_of_scaling_incorrect(size, in_dim, scaling, sparsity):
     with pytest.raises(ValueError):
-        _ = initialize_weights((5, 1), ones, scaling=scaling, sparsity_type="dense")
+        _ = initialize_weights((size, in_dim), uniform, scaling=scaling, sparsity_type=sparsity)
