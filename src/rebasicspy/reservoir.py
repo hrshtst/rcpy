@@ -93,6 +93,20 @@ class Reservoir(object):
         )
         return self._W
 
+    def _initialize_bias(
+        self,
+        reservoir_size: int,
+        bias_scaling: float | bool,
+        Win_init: Callable[..., WeightsType],
+        seed: int | None,
+    ) -> np.ndarray:
+        bias = np.ravel(
+            initialize_weights(
+                (reservoir_size, 1), Win_init, scaling=bias_scaling, connectivity=1.0, sparsity_type="dense", seed=seed
+            )
+        )
+        return bias
+
     def initialize_input_weights(
         self,
         input_dim: int,
@@ -121,18 +135,14 @@ class Reservoir(object):
         if seed is None:
             seed = self._builder.seed
 
+        # Calculate bias vector.
+        self._bias = self._initialize_bias(reservoir_size, bias_scaling, Win_init, seed)
+
         # Check if the given input scaling vector has correct number
         # of elements.
         if isinstance(input_scaling, Iterable):
             if len(list(input_scaling)) != input_dim:
                 raise ValueError(f"The size of `input_scaling` is mismatched with `input_dim`.")
-
-        # Calculate bias vector.
-        self._bias = np.ravel(
-            initialize_weights(
-                (reservoir_size, 1), Win_init, scaling=bias_scaling, connectivity=1.0, sparsity_type="dense", seed=seed
-            )
-        )
 
         # Calculate Win matrix.
         self._Win = initialize_weights(
