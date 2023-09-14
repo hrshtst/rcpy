@@ -4,6 +4,7 @@ import numpy as np
 from numpy.random import Generator
 from scipy import sparse
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, issparse
+from scipy.sparse.linalg import ArpackNoConvergence
 
 from rebasicspy._type import SparsityType, WeightsType
 from rebasicspy.metrics import spectral_radius
@@ -285,12 +286,19 @@ def initialize_weights(
     sparsity_type: SparsityType = "dense",
     **kwargs,
 ) -> WeightsType:
-    w = w_initializer(shape, sparsity_type=sparsity_type, **kwargs)
-    if spectral_radius is not None:
-        w = _scale_spectral_radius(w, spectral_radius)
-    if scaling is not None:
-        w = _scale_inputs(w, scaling)
-    return w
+    iteration = 10
+    while iteration > 0:
+        w = w_initializer(shape, sparsity_type=sparsity_type, **kwargs)
+        try:
+            if spectral_radius is not None:
+                w = _scale_spectral_radius(w, spectral_radius)
+            if scaling is not None:
+                w = _scale_inputs(w, scaling)
+            return w
+        except ArpackNoConvergence:
+            iteration -= 1
+            # print(f"Re-sampling initial weights")
+    raise RuntimeError("No convergence: did not find any eigenvalues to sufficient accuracy.")
 
 
 def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
