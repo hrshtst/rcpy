@@ -47,6 +47,11 @@ class TestReservoir:
         res = Reservoir(default_builder)
         assert res._builder is not default_builder
 
+    def test_init_x(self, default_reservoir: Reservoir):
+        assert default_reservoir.x.shape == (15,)
+        assert type(default_reservoir.x) is np.ndarray
+        assert np.all(default_reservoir.x == 0.0)
+
     def test_init_leaking_rate(self, default_reservoir: Reservoir):
         assert default_reservoir.leaking_rate == 0.98
 

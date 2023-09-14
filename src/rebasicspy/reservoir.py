@@ -29,6 +29,7 @@ _ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED = (
 
 class Reservoir(object):
     _builder: ReservoirBuilder
+    _x: np.ndarray
     _W: WeightsType
     _Win: WeightsType
     _bias: np.ndarray
@@ -39,7 +40,12 @@ class Reservoir(object):
         self._builder = copy.copy(builder)
         self._leaking_rate = self._builder.leaking_rate
         self._seed = self._builder.seed
+        self.initialize_reservoir_state()
         self.initialize_internal_weights()
+
+    @property
+    def x(self) -> np.ndarray:
+        return self._x
 
     @property
     def W(self) -> WeightsType:
@@ -71,6 +77,13 @@ class Reservoir(object):
     @property
     def size(self) -> int:
         return self._W.shape[0]
+
+    def initialize_reservoir_state(self, reservoir_size: int | None = None) -> np.ndarray:
+        if reservoir_size is None:
+            reservoir_size = self._builder.reservoir_size
+
+        self._x = np.zeros(reservoir_size)
+        return self._x
 
     def initialize_internal_weights(
         self,
