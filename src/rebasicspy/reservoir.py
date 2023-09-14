@@ -22,6 +22,11 @@ class ReservoirBuilder:
     seed: int | None = None
 
 
+_ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED = (
+    f"Input weights have not been initialized yet. Call `initialize_input_weights` first."
+)
+
+
 class Reservoir(object):
     _builder: ReservoirBuilder
     _W: WeightsType
@@ -42,10 +47,14 @@ class Reservoir(object):
 
     @property
     def Win(self) -> WeightsType:
+        if not hasattr(self, "_Win"):
+            raise RuntimeError(_ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED)
         return self._Win
 
     @property
     def bias(self) -> np.ndarray:
+        if not hasattr(self, "_bias"):
+            raise RuntimeError(_ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED)
         return self._bias
 
     @property

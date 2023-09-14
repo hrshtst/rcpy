@@ -174,3 +174,27 @@ class TestReservoir:
         # the rest of weights may be > 0.5 or < -0.5
         assert np.any(Win > 0.5)
         assert np.any(Win < -0.5)
+
+    def test_initialize_input_weights_allow_zero_dimension(self, default_reservoir: Reservoir):
+        Nx = default_reservoir._builder.reservoir_size
+        Win = default_reservoir.initialize_input_weights(0)
+        assert Win.shape == (Nx, 0)
+        assert type(Win) is np.ndarray
+
+        u = np.empty((0, 1))
+        r = Win @ u
+        assert r.shape == (Nx, 1)
+        assert np.all(r == 0.0)
+
+        bias = default_reservoir.bias
+        assert bias.shape == (default_reservoir._builder.reservoir_size,)
+        assert np.all(bias != 0.0)
+        assert type(bias) is np.ndarray
+
+    def test_raise_exception_when_access_Win_before_initialization(self, default_reservoir: Reservoir):
+        with pytest.raises(RuntimeError):
+            _ = default_reservoir.Win
+
+    def test_raise_exception_when_access_bias_before_initialization(self, default_reservoir: Reservoir):
+        with pytest.raises(RuntimeError):
+            _ = default_reservoir.bias
