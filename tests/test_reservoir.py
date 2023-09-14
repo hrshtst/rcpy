@@ -144,7 +144,7 @@ class TestReservoir:
         assert default_reservoir.bias.shape == (reservoir_size,)
         assert default_reservoir.has_input_bias is (bias_scaling != 0.0)
         if bias_scaling:
-            assert np.all(default_reservoir.bias != 0.0)
+            assert np.any(default_reservoir.bias != 0.0)
         else:
             assert_array_equal(default_reservoir.bias, np.zeros(reservoir_size))
         assert type(default_reservoir.bias) is np.ndarray

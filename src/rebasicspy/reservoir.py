@@ -96,13 +96,19 @@ class Reservoir(object):
     def _initialize_bias(
         self,
         reservoir_size: int,
+        input_connectivity: float,
         bias_scaling: float | bool,
         Win_init: Callable[..., WeightsType],
         seed: int | None,
     ) -> np.ndarray:
         bias = np.ravel(
             initialize_weights(
-                (reservoir_size, 1), Win_init, scaling=bias_scaling, connectivity=1.0, sparsity_type="dense", seed=seed
+                (reservoir_size, 1),
+                Win_init,
+                scaling=bias_scaling,
+                connectivity=input_connectivity,
+                sparsity_type="dense",
+                seed=seed,
             )
         )
         return bias
@@ -136,7 +142,7 @@ class Reservoir(object):
             seed = self._builder.seed
 
         # Calculate bias vector.
-        self._bias = self._initialize_bias(reservoir_size, bias_scaling, Win_init, seed)
+        self._bias = self._initialize_bias(reservoir_size, input_connectivity, bias_scaling, Win_init, seed)
 
         # Check if the given input scaling vector has correct number
         # of elements.
