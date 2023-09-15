@@ -5,7 +5,7 @@ from rebasicspy.activations import identity, relu, sigmoid, softmax, tanh
 from rebasicspy.metrics import WeightsType
 from rebasicspy.random import get_rng
 from rebasicspy.reservoir import Reservoir, ReservoirBuilder
-from rebasicspy.weights import normal, uniform
+from rebasicspy.weights import normal, ones, uniform
 from scipy.sparse import csc_matrix, csr_matrix
 
 
@@ -263,6 +263,44 @@ class TestReservoir:
         assert bias.shape == (default_reservoir._builder.reservoir_size,)
         assert np.all(bias != 0.0)
         assert type(bias) is np.ndarray
+
+    @pytest.mark.parametrize(
+        "input_dim,scaling",
+        [
+            (2, (0.1, 0.2)),
+            (2, (0.5, 1.0)),
+            (3, (0.1, 0.2, 0.3)),
+            (3, (0.5, 1.0, 1.5)),
+            (4, (0.1, 0.2, 0.3, 0.4)),
+            (4, (0.5, 1.0, 1.5, 2.0)),
+        ],
+    )
+    def test_initialize_input_weights_allow_element_wise_scaling(
+        self, default_reservoir: Reservoir, input_dim: int, scaling: tuple[int, ...]
+    ):
+        size = default_reservoir.size
+        Win = default_reservoir.initialize_input_weights(input_dim, input_scaling=scaling, Win_init=ones)
+        assert Win.shape == (size, input_dim)
+        Win_array = ensure_ndarray(Win)
+        I = np.ones(size, dtype=float)
+        for i, s in enumerate(scaling):
+            Win_i = Win_array[:, i]
+            assert_array_equal(Win_i, s * I)
+
+    @pytest.mark.parametrize(
+        "input_dim,scaling",
+        [
+            (3, (0.1, 0.2)),
+            (2, (0.1, 0.2, 0.3)),
+            (1, (0.1, 0.2, 0.3, 0.4)),
+        ],
+    )
+    def test_initialize_input_weights_raise_exception_when_input_scaling_size_mismatch(
+        self, default_reservoir: Reservoir, input_dim: int, scaling: tuple[int, ...]
+    ):
+        with pytest.raises(ValueError) as exinfo:
+            _ = default_reservoir.initialize_input_weights(input_dim, input_scaling=scaling)
+        assert str(exinfo.value) == "The size of `input_scaling` is mismatched with `input_dim`."
 
     def test_raise_exception_when_access_Win_before_initialization(self):
         res = Reservoir(get_default_builder())
