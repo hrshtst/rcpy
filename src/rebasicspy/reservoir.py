@@ -238,3 +238,24 @@ class Reservoir(object):
             seed=seed,
         )
         return self._Win
+
+    def kernel(self, u: np.ndarray, x: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
+        W = self.W
+        Win = self.Win
+        bias = self.bias
+
+        g_in = self.noise_gain_in
+        noise = self.noise_generator
+
+        pre_x = Win @ (u + noise(shape=u.shape, gain=g_in)) + W @ x + bias
+
+        # if self.has_feedback:
+        #     Wfb = self.Wfb
+        #     g_fb = self.noise_gain_fb
+        #     h = self.fb_activation
+        #     pre_y = self.feedback().reshape(-1, 1)
+        #     y = h(pre_y) + noise(dist=dist, shape=pre_y.shape, gain=g_fb)
+
+        #     pre_x += Wfb @ y
+
+        return pre_x

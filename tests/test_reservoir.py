@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_almost_equal, assert_array_equal
 from rebasicspy.metrics import WeightsType
 from rebasicspy.random import get_rng
 from rebasicspy.reservoir import Reservoir, ReservoirBuilder
@@ -248,3 +248,47 @@ class TestReservoir:
         res = Reservoir(get_default_builder())
         with pytest.raises(RuntimeError):
             _ = res.bias
+
+    def test_kernel(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        W = default_reservoir.W
+        Win = default_reservoir.Win
+        bias = default_reservoir.bias
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+
+        expected = Win @ u + W @ x + bias
+        actual = default_reservoir.kernel(u, x)
+
+        assert_almost_equal(expected, actual)
+
+    def test_kernel_zero_input(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = 0
+        W = default_reservoir.W
+        Win = default_reservoir.initialize_input_weights(input_dim)
+        bias = default_reservoir.bias
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+
+        expected = Win @ u + W @ x + bias
+        actual = default_reservoir.kernel(u, x)
+
+        assert_almost_equal(expected, actual)
+        assert_almost_equal(bias, actual)
+
+    def test_kernel_input_noise(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        W = default_reservoir.W
+        Win = default_reservoir.Win
+        bias = default_reservoir.bias
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+
+        default_reservoir.initialize_noise_generator(noise_gain_in=0.01)
+        no_noise = Win @ u + W @ x + bias
+        actual = default_reservoir.kernel(u, x)
+
+        assert not np.any(no_noise == actual)
