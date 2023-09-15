@@ -322,7 +322,7 @@ class TestReservoir:
         x = np.zeros(size)
 
         expected = Win @ u + W @ x + bias
-        actual = default_reservoir.kernel(u, x)
+        actual = default_reservoir.kernel(u, x, None)
 
         assert_array_almost_equal(expected, actual)
 
@@ -336,7 +336,7 @@ class TestReservoir:
         x = np.zeros(size)
 
         expected = Win @ u + W @ x + bias
-        actual = default_reservoir.kernel(u, x)
+        actual = default_reservoir.kernel(u, x, None)
 
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(bias, actual)
@@ -352,7 +352,7 @@ class TestReservoir:
 
         default_reservoir.initialize_noise_generator(noise_gain_in=0.01)
         no_noise = Win @ u + W @ x + bias
-        actual = default_reservoir.kernel(u, x)
+        actual = default_reservoir.kernel(u, x, None)
 
         assert not np.any(no_noise == actual)
 
@@ -363,9 +363,9 @@ class TestReservoir:
         x = np.zeros(size)
         lr = default_reservoir.leaking_rate
 
-        pre_x = default_reservoir.kernel(u, x)
+        pre_x = default_reservoir.kernel(u, x, None)
         expected = (1 - lr) * x + lr * np.tanh(pre_x)
-        actual = default_reservoir.forward_internal(u)
+        actual = default_reservoir.forward_internal(u, None)
 
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(expected, default_reservoir.state)
@@ -378,9 +378,9 @@ class TestReservoir:
         x = np.zeros(size)
         lr = default_reservoir.leaking_rate
 
-        pre_x = default_reservoir.kernel(u, x)
+        pre_x = default_reservoir.kernel(u, x, None)
         expected = (1 - lr) * x + lr * np.tanh(pre_x)
-        actual = default_reservoir.forward_internal(u)
+        actual = default_reservoir.forward_internal(u, None)
 
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(expected, default_reservoir.state)
@@ -393,9 +393,9 @@ class TestReservoir:
         lr = default_reservoir.leaking_rate
 
         default_reservoir.initialize_noise_generator(noise_gain_rc=0.01)
-        pre_x = default_reservoir.kernel(u, x)
+        pre_x = default_reservoir.kernel(u, x, None)
         no_noise = (1 - lr) * x + lr * np.tanh(pre_x)
-        actual = default_reservoir.forward_internal(u)
+        actual = default_reservoir.forward_internal(u, None)
 
         assert not np.any(no_noise == actual)
 
@@ -407,10 +407,10 @@ class TestReservoir:
         s = np.zeros(size)
         lr = default_reservoir.leaking_rate
 
-        pre_x = default_reservoir.kernel(u, x)
+        pre_x = default_reservoir.kernel(u, x, None)
         s_next = (1 - lr) * s + lr * pre_x
         x_next = np.tanh(s_next)
-        actual = default_reservoir.forward_external(u)
+        actual = default_reservoir.forward_external(u, None)
 
         assert_array_almost_equal(x_next, actual)
         assert_array_almost_equal(x_next, default_reservoir.state)
@@ -425,10 +425,10 @@ class TestReservoir:
         s = np.zeros(size)
         lr = default_reservoir.leaking_rate
 
-        pre_x = default_reservoir.kernel(u, x)
+        pre_x = default_reservoir.kernel(u, x, None)
         s_next = (1 - lr) * s + lr * pre_x
         x_next = np.tanh(s_next)
-        actual = default_reservoir.forward_external(u)
+        actual = default_reservoir.forward_external(u, None)
 
         assert_array_almost_equal(x_next, actual)
         assert_array_almost_equal(x_next, default_reservoir.state)
@@ -443,10 +443,10 @@ class TestReservoir:
         lr = default_reservoir.leaking_rate
 
         default_reservoir.initialize_noise_generator(noise_gain_rc=0.01)
-        pre_x = default_reservoir.kernel(u, x)
+        pre_x = default_reservoir.kernel(u, x, None)
         s_next = (1 - lr) * s + lr * pre_x
         x_next = np.tanh(s_next)
-        actual = default_reservoir.forward_external(u)
+        actual = default_reservoir.forward_external(u, None)
 
         assert not np.any(s_next == default_reservoir.internal_state)
         assert not np.any(x_next == actual)
@@ -555,3 +555,104 @@ class TestReservoir:
         with pytest.raises(ValueError) as exinfo:
             _ = default_reservoir.initialize_feedback_weights(output_dim, fb_scaling=scaling)
         assert str(exinfo.value) == "The size of `fb_scaling` is mismatched with `output_dim`."
+
+    def test_kernel_with_feedback(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        output_dim = 3
+        default_reservoir.initialize_feedback_weights(output_dim)
+
+        W = default_reservoir.W
+        Win = default_reservoir.Win
+        Wfb = default_reservoir.Wfb
+        bias = default_reservoir.bias
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        y = np.ones(output_dim)
+
+        expected = Win @ u + W @ x + bias + Wfb @ y
+        actual = default_reservoir.kernel(u, x, y)
+
+        assert_array_almost_equal(expected, actual)
+
+    def test_kernel_with_feedback_noise(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        output_dim = 3
+        default_reservoir.initialize_feedback_weights(output_dim)
+
+        W = default_reservoir.W
+        Win = default_reservoir.Win
+        Wfb = default_reservoir.Wfb
+        bias = default_reservoir.bias
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        y = np.ones(output_dim)
+
+        default_reservoir.initialize_noise_generator(noise_gain_fb=0.01)
+        no_noise = Win @ u + W @ x + bias + Wfb @ y
+        actual = default_reservoir.kernel(u, x, y)
+
+        assert not np.any(no_noise == actual)
+
+    def test_forward_internal_with_feedback(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        output_dim = 3
+        default_reservoir.initialize_feedback_weights(output_dim)
+
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        y = np.ones(output_dim)
+        lr = default_reservoir.leaking_rate
+
+        pre_x = default_reservoir.kernel(u, x, y)
+        expected = (1 - lr) * x + lr * np.tanh(pre_x)
+        actual = default_reservoir.forward_internal(u, y)
+
+        assert_array_almost_equal(expected, actual)
+        assert_array_almost_equal(expected, default_reservoir.state)
+
+    def test_forward_external_with_feedback(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        output_dim = 3
+        default_reservoir.initialize_feedback_weights(output_dim)
+
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        y = np.ones(output_dim)
+        s = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        pre_x = default_reservoir.kernel(u, x, y)
+        s_next = (1 - lr) * s + lr * pre_x
+        x_next = np.tanh(s_next)
+        actual = default_reservoir.forward_external(u, y)
+
+        assert_array_almost_equal(x_next, actual)
+        assert_array_almost_equal(x_next, default_reservoir.state)
+        assert_array_equal(s_next, default_reservoir.internal_state)
+
+    def test_forward_raise_exception_when_y_is_given_before_init(self, default_reservoir: Reservoir):
+        input_dim = default_reservoir.input_dim
+        output_dim = 3
+        u = np.ones(input_dim)
+        y = np.ones(output_dim)
+
+        assert not default_reservoir.has_feedback()
+        # Raise exception when y is given before initializing Wfb.
+        with pytest.raises(RuntimeError) as exinfo:
+            _ = default_reservoir.forward(u, y)
+        assert str(exinfo.value).startswith("Feedback weights have not been initialized yet.")
+
+    def test_forward_raise_exception_when_y_is_not_given_after_init(self, default_reservoir: Reservoir):
+        input_dim = default_reservoir.input_dim
+        output_dim = 3
+        u = np.ones(input_dim)
+
+        # Raise exception when y is not given after initializing Wfb.
+        default_reservoir.initialize_feedback_weights(output_dim)
+        with pytest.raises(RuntimeError) as exinfo:
+            _ = default_reservoir.forward(u)
+        assert str(exinfo.value).startswith("Reservoir has feedback connection, but no feedback signal was given.")

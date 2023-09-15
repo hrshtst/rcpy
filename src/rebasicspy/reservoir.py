@@ -59,7 +59,7 @@ class Reservoir(object):
     _noise_gain_fb: float
     _noise_generator: Callable[..., np.ndarray]
     _seed: int | None
-    _forward_fn: Callable[[np.ndarray], np.ndarray]
+    _forward_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
 
     def __init__(self, builder: ReservoirBuilder):
         self._builder = copy.copy(builder)
@@ -343,7 +343,7 @@ class Reservoir(object):
         )
         return self._Wfb
 
-    def kernel(self, u: np.ndarray, x: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
+    def kernel(self, u: np.ndarray, x: np.ndarray, y: np.ndarray | None) -> np.ndarray:
         W = self.W
         Win = self.Win
         bias = self.bias
@@ -353,18 +353,16 @@ class Reservoir(object):
 
         pre_x = Win @ (u + noise(shape=u.shape, gain=g_in)) + W @ x + bias
 
-        # if self.has_feedback:
-        #     Wfb = self.Wfb
-        #     g_fb = self.noise_gain_fb
-        #     h = self.fb_activation
-        #     pre_y = self.feedback().reshape(-1, 1)
-        #     y = h(pre_y) + noise(dist=dist, shape=pre_y.shape, gain=g_fb)
-
-        #     pre_x += Wfb @ y
+        if y is not None:
+            Wfb = self.Wfb
+            g_fb = self.noise_gain_fb
+            h = self.fb_activation
+            y_noise_added = h(y) + noise(shape=y.shape, gain=g_fb)
+            pre_x += Wfb @ y_noise_added
 
         return pre_x
 
-    def forward_internal(self, u: np.ndarray) -> np.ndarray:
+    def forward_internal(self, u: np.ndarray, y: np.ndarray | None) -> np.ndarray:
         x = self.x
         lr = self.leaking_rate
         f = self.activation
@@ -372,11 +370,11 @@ class Reservoir(object):
         g_rc = self.noise_gain_rc
         noise = self.noise_generator
 
-        x_next = (1.0 - lr) * x + lr * f(self.kernel(u, x)) + noise(shape=x.shape, gain=g_rc)
+        x_next = (1.0 - lr) * x + lr * f(self.kernel(u, x, y)) + noise(shape=x.shape, gain=g_rc)
         self._x = x_next
         return x_next
 
-    def forward_external(self, u: np.ndarray) -> np.ndarray:
+    def forward_external(self, u: np.ndarray, y: np.ndarray | None) -> np.ndarray:
         x = self.x
         s = self.internal_state
         lr = self.leaking_rate
@@ -385,11 +383,14 @@ class Reservoir(object):
         g_rc = self.noise_gain_rc
         noise = self.noise_generator
 
-        s_next = (1.0 - lr) * s + lr * self.kernel(u, x) + noise(shape=x.shape, gain=g_rc)
+        s_next = (1.0 - lr) * s + lr * self.kernel(u, x, y) + noise(shape=x.shape, gain=g_rc)
         x_next = f(s_next)
         self._s = s_next
         self._x = x_next
         return x_next
 
-    def forward(self, u: np.ndarray) -> np.ndarray:
-        return self._forward_fn(u)
+    def forward(self, u: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
+        if self.has_feedback() and y is None:
+            raise RuntimeError(f"Reservoir has feedback connection, but no feedback signal was given.")
+
+        return self._forward_fn(u, y)
