@@ -28,6 +28,7 @@ class ReservoirBuilder:
     noise_gain_in: float = 0.0
     noise_gain_fb: float = 0.0
     noise_type: str = "normal"
+    forward_type: str = "internal"
     seed: int | None = None
 
 
@@ -51,12 +52,14 @@ class Reservoir(object):
     _noise_gain_fb: float
     _noise_generator: Callable[..., np.ndarray]
     _seed: int | None
+    _forward_fn: Callable[[np.ndarray], np.ndarray]
 
     def __init__(self, builder: ReservoirBuilder):
         self._builder = copy.copy(builder)
         self._leaking_rate = self._builder.leaking_rate
         self._seed = self._builder.seed
         self.initialize_activation()
+        self.initialize_forward_type()
         self.initialize_noise_generator()
         self.initialize_reservoir_state()
         self.initialize_internal_weights()
@@ -144,6 +147,17 @@ class Reservoir(object):
 
         self._activation = activation
         self._fb_activation = fb_activation
+
+    def initialize_forward_type(self, forward_type: str | None = None):
+        if forward_type is None:
+            forward_type = self._builder.forward_type
+
+        if forward_type == "internal":
+            self._forward_fn = self.forward_internal
+        elif forward_type == "external":
+            self._forward_fn = self.forward_external
+        else:
+            raise RuntimeError(f"Unknown forward type: {forward_type}")
 
     def initialize_noise_generator(
         self,
@@ -296,3 +310,33 @@ class Reservoir(object):
         #     pre_x += Wfb @ y
 
         return pre_x
+
+    def forward_internal(self, u: np.ndarray) -> np.ndarray:
+        x = self.x
+        lr = self.leaking_rate
+        f = self.activation
+
+        g_rc = self.noise_gain_rc
+        noise = self.noise_generator
+
+        x_next = (1.0 - lr) * x + lr * f(self.kernel(u, x)) + noise(shape=x.shape, gain=g_rc)
+        self._x = x_next
+        return x_next
+
+    def forward_external(self, u: np.ndarray) -> np.ndarray:
+        x = self.x
+        s = self.internal_state
+        lr = self.leaking_rate
+        f = self.activation
+
+        g_rc = self.noise_gain_rc
+        noise = self.noise_generator
+
+        s_next = (1.0 - lr) * s + lr * self.kernel(u, x) + noise(shape=x.shape, gain=g_rc)
+        x_next = f(s_next)
+        self._s = s_next
+        self._x = x_next
+        return x_next
+
+    def forward(self, u: np.ndarray) -> np.ndarray:
+        return self._forward_fn(u)

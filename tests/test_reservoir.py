@@ -317,3 +317,98 @@ class TestReservoir:
         actual = default_reservoir.kernel(u, x)
 
         assert not np.any(no_noise == actual)
+
+    def test_forward_internal(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        pre_x = default_reservoir.kernel(u, x)
+        expected = (1 - lr) * x + lr * np.tanh(pre_x)
+        actual = default_reservoir.forward_internal(u)
+
+        assert_array_almost_equal(expected, actual)
+        assert_array_almost_equal(expected, default_reservoir.state)
+
+    def test_forward_internal_zero_input(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = 0
+        default_reservoir.initialize_input_weights(input_dim)
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        pre_x = default_reservoir.kernel(u, x)
+        expected = (1 - lr) * x + lr * np.tanh(pre_x)
+        actual = default_reservoir.forward_internal(u)
+
+        assert_array_almost_equal(expected, actual)
+        assert_array_almost_equal(expected, default_reservoir.state)
+
+    def test_forward_internal_rc_noise(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        default_reservoir.initialize_noise_generator(noise_gain_rc=0.01)
+        pre_x = default_reservoir.kernel(u, x)
+        no_noise = (1 - lr) * x + lr * np.tanh(pre_x)
+        actual = default_reservoir.forward_internal(u)
+
+        assert not np.any(no_noise == actual)
+
+    def test_forward_external(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        s = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        pre_x = default_reservoir.kernel(u, x)
+        s_next = (1 - lr) * s + lr * pre_x
+        x_next = np.tanh(s_next)
+        actual = default_reservoir.forward_external(u)
+
+        assert_array_almost_equal(x_next, actual)
+        assert_array_almost_equal(x_next, default_reservoir.state)
+        assert_array_equal(s_next, default_reservoir.internal_state)
+
+    def test_forward_external_zero_input(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = 0
+        default_reservoir.initialize_input_weights(input_dim)
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        s = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        pre_x = default_reservoir.kernel(u, x)
+        s_next = (1 - lr) * s + lr * pre_x
+        x_next = np.tanh(s_next)
+        actual = default_reservoir.forward_external(u)
+
+        assert_array_almost_equal(x_next, actual)
+        assert_array_almost_equal(x_next, default_reservoir.state)
+        assert_array_equal(s_next, default_reservoir.internal_state)
+
+    def test_forward_external_rc_noise(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        input_dim = default_reservoir.input_dim
+        u = np.ones(input_dim)
+        x = np.zeros(size)
+        s = np.zeros(size)
+        lr = default_reservoir.leaking_rate
+
+        default_reservoir.initialize_noise_generator(noise_gain_rc=0.01)
+        pre_x = default_reservoir.kernel(u, x)
+        s_next = (1 - lr) * s + lr * pre_x
+        x_next = np.tanh(s_next)
+        actual = default_reservoir.forward_external(u)
+
+        assert not np.any(s_next == default_reservoir.internal_state)
+        assert not np.any(x_next == actual)
