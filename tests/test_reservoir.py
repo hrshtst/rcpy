@@ -53,8 +53,14 @@ class TestReservoir:
 
     def test_init_x(self, default_reservoir: Reservoir):
         assert default_reservoir.x.shape == (15,)
+        assert default_reservoir.state.shape == (15,)
+        assert default_reservoir.internal_state.shape == (15,)
         assert type(default_reservoir.x) is np.ndarray
+        assert type(default_reservoir.state) is np.ndarray
+        assert type(default_reservoir.internal_state) is np.ndarray
         assert np.all(default_reservoir.x == 0.0)
+        assert np.all(default_reservoir.state == 0.0)
+        assert np.all(default_reservoir.internal_state == 0.0)
 
     def test_init_activation(self, default_reservoir: Reservoir):
         assert default_reservoir.activation is tanh
