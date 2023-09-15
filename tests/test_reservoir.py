@@ -412,3 +412,10 @@ class TestReservoir:
 
         assert not np.any(s_next == default_reservoir.internal_state)
         assert not np.any(x_next == actual)
+
+    def test_has_feedback(self, default_reservoir: Reservoir):
+        assert not default_reservoir.has_feedback()
+
+    def test_raise_exception_when_access_Wfb_before_init(self, default_reservoir: Reservoir):
+        with pytest.raises(RuntimeError):
+            _ = default_reservoir.Wfb

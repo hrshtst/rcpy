@@ -19,9 +19,12 @@ class ReservoirBuilder:
     leaking_rate: float
     W_init: Callable[..., WeightsType] = uniform
     Win_init: Callable[..., WeightsType] = uniform
+    Wfb_init: Callable[..., WeightsType] = uniform
     input_scaling: float | Iterable[float] = 1.0
-    input_connectivity: float = 1.0
     bias_scaling: float = 1.0
+    fb_scaling: float = 1.0
+    input_connectivity: float = 1.0
+    fb_connectivity: float = 1.0
     activation: Callable[[np.ndarray], np.ndarray] = tanh
     fb_activation: Callable[[np.ndarray], np.ndarray] = identity
     noise_gain_rc: float = 0.0
@@ -35,6 +38,9 @@ class ReservoirBuilder:
 _ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED = (
     f"Input weights have not been initialized yet. Call `initialize_input_weights` first."
 )
+_ERR_MSG_FEEDBACK_WEIGHTS_NOT_INITIALIZED = (
+    f"Feedback weights have not been initialized yet. Call `initialize_feedback_weights` first."
+)
 
 
 class Reservoir(object):
@@ -43,6 +49,7 @@ class Reservoir(object):
     _s: np.ndarray
     _W: WeightsType
     _Win: WeightsType
+    _Wfb: WeightsType
     _bias: np.ndarray
     _leaking_rate: float
     _activation: Callable[[np.ndarray], np.ndarray]
@@ -87,6 +94,12 @@ class Reservoir(object):
         return self._Win
 
     @property
+    def Wfb(self) -> WeightsType:
+        if not hasattr(self, "_Wfb"):
+            raise RuntimeError(_ERR_MSG_FEEDBACK_WEIGHTS_NOT_INITIALIZED)
+        return self._Wfb
+
+    @property
     def bias(self) -> np.ndarray:
         if not hasattr(self, "_bias"):
             raise RuntimeError(_ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED)
@@ -97,6 +110,9 @@ class Reservoir(object):
             return not np.all(self._bias == 0.0)
         else:
             return self._builder.bias_scaling != 0.0
+
+    def has_feedback(self) -> bool:
+        return hasattr(self, "_Wfb")
 
     @property
     def leaking_rate(self) -> float:
