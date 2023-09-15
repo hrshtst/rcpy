@@ -182,6 +182,19 @@ class TestReservoir:
         assert np.any(Win > 0.5)
         assert np.any(Win < -0.5)
 
+    @pytest.mark.parametrize("bias", [0.0, False])
+    def test_initialize_input_weights_when_bias_is_zero(self, default_reservoir: Reservoir, bias):
+        input_dim = 2
+        Win = default_reservoir.initialize_input_weights(input_dim, bias_scaling=bias)
+        assert Win.shape == (default_reservoir.size, input_dim)
+
+        # When bias is zero or False, bias vector should be zero.
+        bias = default_reservoir.bias
+        assert not default_reservoir.has_input_bias
+        assert bias.shape == (default_reservoir.size,)
+        assert np.all(bias == 0.0)
+        assert type(bias) is np.ndarray
+
     def test_initialize_input_weights_allow_zero_dimension(self, default_reservoir: Reservoir):
         Nx = default_reservoir._builder.reservoir_size
         Win = default_reservoir.initialize_input_weights(0)
