@@ -18,7 +18,9 @@ def default_builder() -> ReservoirBuilder:
 
 @pytest.fixture
 def default_reservoir() -> Reservoir:
-    return Reservoir(get_default_builder())
+    r = Reservoir(get_default_builder())
+    r.initialize_input_weights(2)
+    return r
 
 
 def actual_spectral_radius(w: WeightsType) -> float:
@@ -196,10 +198,12 @@ class TestReservoir:
         assert np.all(bias != 0.0)
         assert type(bias) is np.ndarray
 
-    def test_raise_exception_when_access_Win_before_initialization(self, default_reservoir: Reservoir):
+    def test_raise_exception_when_access_Win_before_initialization(self):
+        res = Reservoir(get_default_builder())
         with pytest.raises(RuntimeError):
-            _ = default_reservoir.Win
+            _ = res.Win
 
-    def test_raise_exception_when_access_bias_before_initialization(self, default_reservoir: Reservoir):
+    def test_raise_exception_when_access_bias_before_initialization(self):
+        res = Reservoir(get_default_builder())
         with pytest.raises(RuntimeError):
-            _ = default_reservoir.bias
+            _ = res.bias
