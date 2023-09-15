@@ -1,10 +1,12 @@
 import copy
 from dataclasses import dataclass
+from functools import partial
 from typing import Callable, Iterable
 
 import numpy as np
 
 from rebasicspy._type import SparsityType, WeightsType
+from rebasicspy.random import get_rng, noise
 from rebasicspy.weights import initialize_weights, uniform
 
 
@@ -19,6 +21,10 @@ class ReservoirBuilder:
     input_scaling: float | Iterable[float] = 1.0
     input_connectivity: float = 1.0
     bias_scaling: float = 1.0
+    noise_gain_rc: float = 0.0
+    noise_gain_in: float = 0.0
+    noise_gain_fb: float = 0.0
+    noise_type: str = "normal"
     seed: int | None = None
 
 
@@ -34,12 +40,17 @@ class Reservoir(object):
     _Win: WeightsType
     _bias: np.ndarray
     _leaking_rate: float
+    _noise_gain_rc: float
+    _noise_gain_in: float
+    _noise_gain_fb: float
+    _noise_generator: Callable[..., np.ndarray]
     _seed: int | None
 
     def __init__(self, builder: ReservoirBuilder):
         self._builder = copy.copy(builder)
         self._leaking_rate = self._builder.leaking_rate
         self._seed = self._builder.seed
+        self.initialize_noise_generator()
         self.initialize_reservoir_state()
         self.initialize_internal_weights()
 
@@ -77,6 +88,51 @@ class Reservoir(object):
     @property
     def size(self) -> int:
         return self._W.shape[0]
+
+    @property
+    def input_dim(self) -> int:
+        return self.Win.shape[1]
+
+    @property
+    def noise_gain_rc(self) -> float:
+        return self._noise_gain_rc
+
+    @property
+    def noise_gain_in(self) -> float:
+        return self._noise_gain_in
+
+    @property
+    def noise_gain_fb(self) -> float:
+        return self._noise_gain_fb
+
+    @property
+    def noise_generator(self) -> Callable[..., np.ndarray]:
+        return self._noise_generator
+
+    def initialize_noise_generator(
+        self,
+        noise_gain_rc: float | None = None,
+        noise_gain_in: float | None = None,
+        noise_gain_fb: float | None = None,
+        noise_type: str | None = None,
+        seed: int | None = None,
+    ):
+        if noise_gain_rc is None:
+            noise_gain_rc = self._builder.noise_gain_rc
+        if noise_gain_in is None:
+            noise_gain_in = self._builder.noise_gain_in
+        if noise_gain_fb is None:
+            noise_gain_fb = self._builder.noise_gain_fb
+        if noise_type is None:
+            noise_type = self._builder.noise_type
+        if seed is None:
+            seed = self._builder.seed
+
+        rng = get_rng(seed)
+        self._noise_gain_rc = noise_gain_rc
+        self._noise_gain_in = noise_gain_in
+        self._noise_gain_fb = noise_gain_fb
+        self._noise_generator = partial(noise, rng=rng, dist=noise_type)
 
     def initialize_reservoir_state(self, reservoir_size: int | None = None) -> np.ndarray:
         if reservoir_size is None:

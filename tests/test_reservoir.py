@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 from rebasicspy.metrics import WeightsType
+from rebasicspy.random import get_rng
 from rebasicspy.reservoir import Reservoir, ReservoirBuilder
 from rebasicspy.weights import normal, uniform
 from scipy.sparse import csc_matrix, csr_matrix
@@ -54,6 +55,13 @@ class TestReservoir:
         assert type(default_reservoir.x) is np.ndarray
         assert np.all(default_reservoir.x == 0.0)
 
+    def test_init_noise_gain(self, default_reservoir: Reservoir):
+        assert default_reservoir.noise_gain_rc == 0.0
+        assert default_reservoir.noise_gain_in == 0.0
+        assert default_reservoir.noise_gain_fb == 0.0
+        assert default_reservoir.noise_generator.keywords["rng"] == get_rng()
+        assert default_reservoir.noise_generator.keywords["dist"] is "normal"
+
     def test_init_leaking_rate(self, default_reservoir: Reservoir):
         assert default_reservoir.leaking_rate == 0.98
 
@@ -64,6 +72,26 @@ class TestReservoir:
         assert default_reservoir.has_input_bias
         default_reservoir.initialize_input_weights(0, bias_scaling=False)
         assert not default_reservoir.has_input_bias
+
+    @pytest.mark.parametrize("g_rc,g_in,g_fb,dist", [(0.1, 0.2, 0.3, "uniform"), (0.03, 0.02, 0.01, "beta")])
+    def test_initialize_noise_generator(self, g_rc, g_in, g_fb, dist):
+        builder = ReservoirBuilder(
+            reservoir_size=5,
+            spectral_radius=0.95,
+            connectivity=0.2,
+            leaking_rate=1.0,
+            noise_gain_rc=g_rc,
+            noise_gain_in=g_in,
+            noise_gain_fb=g_fb,
+            noise_type=dist,
+        )
+        res = Reservoir(builder)
+        rng = get_rng()
+        assert res.noise_gain_rc == g_rc
+        assert res.noise_gain_in == g_in
+        assert res.noise_gain_fb == g_fb
+        assert res.noise_generator.keywords["rng"] is rng
+        assert res.noise_generator.keywords["dist"] == dist
 
     def test_initialize_internal_weights(self, default_reservoir: Reservoir):
         W = default_reservoir.W
