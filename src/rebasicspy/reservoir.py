@@ -92,7 +92,6 @@ class Reservoir(object):
             raise RuntimeError(_ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED)
         return self._bias
 
-    @property
     def has_input_bias(self) -> bool:
         if hasattr(self, "_bias"):
             return not np.all(self._bias == 0.0)

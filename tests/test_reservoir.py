@@ -80,9 +80,9 @@ class TestReservoir:
         assert default_reservoir._seed is None
 
     def test_has_bias_input(self, default_reservoir: Reservoir):
-        assert default_reservoir.has_input_bias
+        assert default_reservoir.has_input_bias()
         default_reservoir.initialize_input_weights(0, bias_scaling=False)
-        assert not default_reservoir.has_input_bias
+        assert not default_reservoir.has_input_bias()
 
     @pytest.mark.parametrize("f,h", [(sigmoid, tanh), (softmax, relu)])
     def test_initialize_activation(self, f, h):
@@ -156,7 +156,7 @@ class TestReservoir:
         Win = default_reservoir.Win
         assert Win.shape == (15, 3)
         assert default_reservoir.bias.shape == (15,)
-        assert default_reservoir.has_input_bias
+        assert default_reservoir.has_input_bias()
         assert np.all(default_reservoir.bias != 0.0)
         assert type(default_reservoir.bias) is np.ndarray
 
@@ -202,7 +202,7 @@ class TestReservoir:
         assert Win.shape == (reservoir_size, input_dim)
 
         assert default_reservoir.bias.shape == (reservoir_size,)
-        assert default_reservoir.has_input_bias is (bias_scaling != 0.0)
+        assert default_reservoir.has_input_bias() is (bias_scaling != 0.0)
         if bias_scaling:
             assert np.any(default_reservoir.bias != 0.0)
         else:
@@ -226,7 +226,7 @@ class TestReservoir:
         assert Win.shape == (default_reservoir.size, input_dim)
 
         # the first column of weights must between [-0.5, 0.5]
-        assert default_reservoir.has_input_bias
+        assert default_reservoir.has_input_bias()
         assert np.all(default_reservoir.bias < 0.5)
         assert np.all(default_reservoir.bias > -0.5)
         assert type(default_reservoir.bias) is np.ndarray
@@ -243,7 +243,7 @@ class TestReservoir:
 
         # When bias is zero or False, bias vector should be zero.
         bias = default_reservoir.bias
-        assert not default_reservoir.has_input_bias
+        assert not default_reservoir.has_input_bias()
         assert bias.shape == (default_reservoir.size,)
         assert np.all(bias == 0.0)
         assert type(bias) is np.ndarray
