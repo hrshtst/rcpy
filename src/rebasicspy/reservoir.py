@@ -6,6 +6,7 @@ from typing import Callable, Iterable
 import numpy as np
 
 from rebasicspy._type import SparsityType, WeightsType
+from rebasicspy.activations import identity, tanh
 from rebasicspy.random import get_rng, noise
 from rebasicspy.weights import initialize_weights, uniform
 
@@ -21,6 +22,8 @@ class ReservoirBuilder:
     input_scaling: float | Iterable[float] = 1.0
     input_connectivity: float = 1.0
     bias_scaling: float = 1.0
+    activation: Callable[[np.ndarray], np.ndarray] = tanh
+    fb_activation: Callable[[np.ndarray], np.ndarray] = identity
     noise_gain_rc: float = 0.0
     noise_gain_in: float = 0.0
     noise_gain_fb: float = 0.0
@@ -40,6 +43,8 @@ class Reservoir(object):
     _Win: WeightsType
     _bias: np.ndarray
     _leaking_rate: float
+    _activation: Callable[[np.ndarray], np.ndarray]
+    _fb_activation: Callable[[np.ndarray], np.ndarray]
     _noise_gain_rc: float
     _noise_gain_in: float
     _noise_gain_fb: float
@@ -50,6 +55,7 @@ class Reservoir(object):
         self._builder = copy.copy(builder)
         self._leaking_rate = self._builder.leaking_rate
         self._seed = self._builder.seed
+        self.initialize_activation()
         self.initialize_noise_generator()
         self.initialize_reservoir_state()
         self.initialize_internal_weights()
@@ -94,6 +100,14 @@ class Reservoir(object):
         return self.Win.shape[1]
 
     @property
+    def activation(self) -> Callable[[np.ndarray], np.ndarray]:
+        return self._activation
+
+    @property
+    def fb_activation(self) -> Callable[[np.ndarray], np.ndarray]:
+        return self._fb_activation
+
+    @property
     def noise_gain_rc(self) -> float:
         return self._noise_gain_rc
 
@@ -108,6 +122,19 @@ class Reservoir(object):
     @property
     def noise_generator(self) -> Callable[..., np.ndarray]:
         return self._noise_generator
+
+    def initialize_activation(
+        self,
+        activation: Callable[[np.ndarray], np.ndarray] | None = None,
+        fb_activation: Callable[[np.ndarray], np.ndarray] | None = None,
+    ):
+        if activation is None:
+            activation = self._builder.activation
+        if fb_activation is None:
+            fb_activation = self._builder.fb_activation
+
+        self._activation = activation
+        self._fb_activation = fb_activation
 
     def initialize_noise_generator(
         self,
