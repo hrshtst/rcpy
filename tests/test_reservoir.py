@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 from rebasicspy.metrics import WeightsType
 from rebasicspy.random import get_rng
 from rebasicspy.reservoir import Reservoir, ReservoirBuilder
@@ -261,7 +261,7 @@ class TestReservoir:
         expected = Win @ u + W @ x + bias
         actual = default_reservoir.kernel(u, x)
 
-        assert_almost_equal(expected, actual)
+        assert_array_almost_equal(expected, actual)
 
     def test_kernel_zero_input(self, default_reservoir: Reservoir):
         size = default_reservoir.size
@@ -275,8 +275,8 @@ class TestReservoir:
         expected = Win @ u + W @ x + bias
         actual = default_reservoir.kernel(u, x)
 
-        assert_almost_equal(expected, actual)
-        assert_almost_equal(bias, actual)
+        assert_array_almost_equal(expected, actual)
+        assert_array_almost_equal(bias, actual)
 
     def test_kernel_input_noise(self, default_reservoir: Reservoir):
         size = default_reservoir.size
