@@ -22,7 +22,7 @@ class ReservoirBuilder:
     Wfb_init: Callable[..., WeightsType] = uniform
     input_scaling: float | Iterable[float] = 1.0
     bias_scaling: float = 1.0
-    fb_scaling: float = 1.0
+    fb_scaling: float | Iterable[float] = 1.0
     input_connectivity: float = 1.0
     fb_connectivity: float = 1.0
     activation: Callable[[np.ndarray], np.ndarray] = tanh
@@ -304,6 +304,44 @@ class Reservoir(object):
             seed=seed,
         )
         return self._Win
+
+    def initialize_feedback_weights(
+        self,
+        output_dim: int,
+        reservoir_size: int | None = None,
+        fb_scaling: float | Iterable[float] | None = None,
+        fb_connectivity: float | None = None,
+        Wfb_init: Callable[..., WeightsType] | None = None,
+        sparsity_type: SparsityType = "dense",
+        seed: int | None = None,
+    ) -> WeightsType:
+        if reservoir_size is None:
+            reservoir_size = self._builder.reservoir_size
+        if fb_scaling is None:
+            fb_scaling = self._builder.fb_scaling
+        if fb_connectivity is None:
+            fb_connectivity = self._builder.fb_connectivity
+        if Wfb_init is None:
+            Wfb_init = self._builder.Wfb_init
+        if seed is None:
+            seed = self._builder.seed
+
+        # Check if the given feedback scaling vector has correct number
+        # of elements.
+        if isinstance(fb_scaling, Iterable):
+            if len(list(fb_scaling)) != output_dim:
+                raise ValueError(f"The size of `fb_scaling` is mismatched with `output_dim`.")
+
+        # Calculate Wfb matrix.
+        self._Wfb = initialize_weights(
+            (reservoir_size, output_dim),
+            Wfb_init,
+            scaling=fb_scaling,
+            connectivity=fb_connectivity,
+            sparsity_type=sparsity_type,
+            seed=seed,
+        )
+        return self._Wfb
 
     def kernel(self, u: np.ndarray, x: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
         W = self.W

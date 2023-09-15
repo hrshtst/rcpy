@@ -457,3 +457,101 @@ class TestReservoir:
     def test_raise_exception_when_access_Wfb_before_init(self, default_reservoir: Reservoir):
         with pytest.raises(RuntimeError):
             _ = default_reservoir.Wfb
+
+    def test_initialize_feedback_weights(self, default_reservoir: Reservoir):
+        size = default_reservoir.size
+        output_dim = 3
+        default_reservoir.initialize_feedback_weights(output_dim)
+        Wfb = default_reservoir.Wfb
+        assert Wfb.shape == (size, output_dim)
+        assert default_reservoir.has_feedback()
+
+        # Check if Wfb is sampled between [-1, 1]
+        assert np.all(Wfb < 1)
+        assert np.all(Wfb > -1)
+        assert np.any(Wfb < 0)
+        assert np.any(Wfb > 0)
+
+        # Check if Wfb is a dense matrix
+        assert not np.any(Wfb == 0.0)
+        assert type(Wfb) is np.ndarray
+
+    @pytest.mark.parametrize(
+        "output_dim,reservoir_size,scaling,p,dist,sparsity,expected_type",
+        [
+            (2, 10, 1.5, 0.5, normal, "csr", csr_matrix),
+            (4, 20, 0.5, 0.2, uniform, "csc", csc_matrix),
+        ],
+    )
+    def test_initialize_feedback_weights_reinitialize(
+        self,
+        default_reservoir: Reservoir,
+        output_dim,
+        reservoir_size,
+        scaling,
+        p,
+        dist,
+        sparsity,
+        expected_type,
+    ):
+        default_reservoir.initialize_feedback_weights(
+            output_dim,
+            reservoir_size=reservoir_size,
+            fb_scaling=scaling,
+            fb_connectivity=p,
+            Wfb_init=dist,
+            sparsity_type=sparsity,
+        )
+        Wfb = default_reservoir.Wfb
+        assert Wfb.shape == (reservoir_size, output_dim)
+        assert default_reservoir.has_feedback()
+
+        # Check if Wfb is scaled by fb_scaling
+        Wfb_array = Wfb.toarray()  # type: ignore
+        if dist == uniform:
+            assert np.all(Wfb_array < scaling)
+            assert np.all(Wfb_array > -scaling)
+        assert np.any(Wfb_array < 0)
+        assert np.any(Wfb_array > 0)
+
+        # Check if Wfb is an expected sparity type
+        assert type(Wfb) is expected_type
+
+    @pytest.mark.parametrize(
+        "output_dim,scaling",
+        [
+            (2, (0.1, 0.2)),
+            (2, (0.5, 1.0)),
+            (3, (0.1, 0.2, 0.3)),
+            (3, (0.5, 1.0, 1.5)),
+            (4, (0.1, 0.2, 0.3, 0.4)),
+            (4, (0.5, 1.0, 1.5, 2.0)),
+        ],
+    )
+    def test_initialize_feedback_weights_allow_element_wise_scaling(
+        self, default_reservoir: Reservoir, output_dim: int, scaling: tuple[int, ...]
+    ):
+        size = default_reservoir.size
+        Wfb = default_reservoir.initialize_feedback_weights(output_dim, fb_scaling=scaling, Wfb_init=ones)
+        assert Wfb.shape == (size, output_dim)
+        assert default_reservoir.has_feedback()
+        Wfb_array = ensure_ndarray(Wfb)
+        I = np.ones(size, dtype=float)
+        for i, s in enumerate(scaling):
+            Wfb_i = Wfb_array[:, i]
+            assert_array_equal(Wfb_i, s * I)
+
+    @pytest.mark.parametrize(
+        "output_dim,scaling",
+        [
+            (3, (0.1, 0.2)),
+            (2, (0.1, 0.2, 0.3)),
+            (1, (0.1, 0.2, 0.3, 0.4)),
+        ],
+    )
+    def test_initialize_feedback_weights_raise_exception_when_fb_scaling_size_mismatch(
+        self, default_reservoir: Reservoir, output_dim: int, scaling: tuple[int, ...]
+    ):
+        with pytest.raises(ValueError) as exinfo:
+            _ = default_reservoir.initialize_feedback_weights(output_dim, fb_scaling=scaling)
+        assert str(exinfo.value) == "The size of `fb_scaling` is mismatched with `output_dim`."
