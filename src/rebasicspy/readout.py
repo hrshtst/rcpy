@@ -1,12 +1,10 @@
 import numpy as np
 
-from rebasicspy._type import WeightsType
-
 _ERR_MSG_READOUT_OPT_NOT_STARTED = "Optimization of readout layer has not started yet."
 
 
 class Readout(object):
-    _Wout: WeightsType
+    _Wout: np.ndarray
     _batch_interval: int
     _batch_count: int
     _batch_processed: bool
@@ -28,21 +26,21 @@ class Readout(object):
             self._batch_interval = val
 
     @property
-    def Wout(self) -> WeightsType:
+    def Wout(self) -> np.ndarray:
         if not hasattr(self, "_Wout"):
             raise RuntimeError(_ERR_MSG_READOUT_OPT_NOT_STARTED)
         return self._Wout
 
-    def backward(self, x: np.ndarray, y_target: np.ndarray):
+    def backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None = None):
         self._batch_count += 1
         self._batch_processed = False
         self._batch_finalized = False
-        self.process_backward(x, y_target)
+        self.process_backward(x, y_target, sample_weight)
         if self._batch_count == self.batch_interval:
             self.process_backward_batch()
 
-    def process_backward(self, x: np.ndarray, y_target: np.ndarray):
-        _ = x, y_target
+    def process_backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None):
+        _ = x, y_target, sample_weight
 
     def process_backward_batch(self):
         self._batch_count = 0
@@ -59,3 +57,6 @@ class Readout(object):
         self._batch_count = 0
         self._batch_processed = False
         self._batch_finalized = False
+
+    def fit(self):
+        pass
