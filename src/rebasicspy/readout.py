@@ -76,3 +76,6 @@ class Readout(object):
             self.finalize_backward_batch()
 
         self.finalize()
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        return self.Wout @ x[:, np.newaxis]

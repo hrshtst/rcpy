@@ -176,3 +176,15 @@ class TestReadout:
         readout.reset()
         with pytest.raises(RuntimeError):
             readout.fit()
+
+    def test_predict_raise_before_run_backward(self, readout: Readout):
+        x, _ = dummy_data()
+        with pytest.raises(RuntimeError):
+            readout.predict(x)
+
+    def test_predict_raise_if_right_after_reset(self, readout: Readout):
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
+        readout.reset()
+        with pytest.raises(RuntimeError):
+            readout.predict(x)
