@@ -152,12 +152,16 @@ class TestReadout:
         readout.reset()
         assert readout.has_nothing_to_process() is True
 
-    def test_reset_always_finalize_when_unprocessed_yet(self, readout: Readout):
+    def test_fit_finalize_when_unprocessed_batch_remain(self, readout: Readout):
         x, y_target = dummy_data()
-        for _ in range(10):
-            readout.backward(x, y_target)
-        assert readout._batch_count > 0
+        readout.backward(x, y_target)
         assert readout._batch_finalized is False
+        readout.fit()
+        assert readout._batch_finalized is True
+
+    def test_fit_raise_when_right_after_reset(self, readout: Readout):
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
         readout.reset()
-        assert readout._batch_count == 0
-        assert readout._batch_finalized is False  # flag gets to off
+        with pytest.raises(RuntimeError):
+            readout.fit()

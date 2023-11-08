@@ -65,4 +65,8 @@ class Readout(object):
         self._batch_finalized = False
 
     def fit(self):
-        pass
+        if self.has_nothing_to_process():
+            raise RuntimeError(_ERR_MSG_READOUT_OPT_NOT_STARTED)
+
+        if self.has_unprocessed_batch():
+            self.finalize_backward_batch()
