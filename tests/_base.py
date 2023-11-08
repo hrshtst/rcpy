@@ -32,3 +32,19 @@ class SmallDataSet(DataSetBase):
     @property
     def coef(self):
         return np.array([[1.0, 2.0]])
+
+
+class LargeDataSet(DataSetBase):
+    def __init__(self, n_samples: int = 500, seed: int = 0):
+        self.rng = gen_rng(seed)
+        self.X = self.rng.normal(0, 1, (n_samples, 4))
+        self.noise = self.rng.normal(0, 0.1, n_samples)
+        self.Y = self._gen_target(self.X, self.noise)
+
+    def _gen_target(self, X, noise):
+        Y = 2 * X[:, 0] + 0.1 * X[:, 1] - 4 * X[:, 2] + 0.5 * X[:, 3] + noise
+        return Y
+
+    @property
+    def coef(self):
+        return np.array([[2.0, 0.1, 4.0, 0.5]])
