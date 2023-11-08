@@ -309,8 +309,8 @@ def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
     return weights
 
 
-def _scale_inputs(weights: WeightsType, scaling: float | Iterable[float]) -> WeightsType:
-    if isinstance(scaling, float):
+def _scale_inputs(weights: WeightsType, scaling: float | int | Iterable[float]) -> WeightsType:
+    if isinstance(scaling, float | int):
         return weights * scaling
     elif len(list(scaling)) == weights.shape[1]:
         return weights * diags(scaling)
