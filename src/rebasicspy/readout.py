@@ -81,6 +81,16 @@ class Readout(object):
         return self.Wout @ x[:, np.newaxis]
 
 
+def rescale_data(X: np.ndarray, y: np.ndarray, sample_weight: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    sample_weight_sqrt = np.sqrt(sample_weight)
+    X = X * sample_weight_sqrt[:, np.newaxis]
+    if y.ndim == 1:
+        y = y * sample_weight_sqrt
+    else:
+        y = y * sample_weight_sqrt[:, np.newaxis]
+    return X, y
+
+
 def initialize_weights(shape: tuple[int, ...], initializer: str = "zeros") -> np.ndarray:
     if initializer == "random":
         return np.random.normal(0.0, 0.5, size=shape)

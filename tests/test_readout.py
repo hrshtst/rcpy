@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from rebasicspy.readout import Readout, initialize_weights
+from numpy.testing import assert_array_equal
+from rebasicspy.readout import Readout, initialize_weights, rescale_data
 
 
 @pytest.fixture
@@ -188,6 +189,28 @@ class TestReadout:
         readout.reset()
         with pytest.raises(RuntimeError):
             readout.predict(x)
+
+
+def get_data_for_rescale(n_samples=10, n_features=4, n_output=2):
+    X = np.arange(n_samples * n_features).reshape(n_samples, n_features)
+    y = np.arange(n_samples * n_output).reshape(n_samples, n_output)
+    sw = np.arange(n_samples) + 1.0
+    sw = 1.0 / sw
+    sw_sqrt = np.sqrt(sw)
+    expected_X = X * sw_sqrt[:, np.newaxis]
+    expected_y = y * sw_sqrt[:, np.newaxis]
+    if n_output == 1:
+        y = np.ravel(y)
+        expected_y = np.ravel(expected_y)
+    return X, y, sw, expected_X, expected_y
+
+
+@pytest.mark.parametrize("n_output", [2, 1])
+def test_rescale_data(n_output):
+    X, y, sw, expected_X, expected_y = get_data_for_rescale(n_output=n_output)
+    actual_X, actual_y = rescale_data(X, y, sw)
+    assert_array_equal(expected_X, actual_X)
+    assert_array_equal(expected_y, actual_y)
 
 
 @pytest.mark.parametrize("shape", [(10,), (20, 4), (30, 1)])
