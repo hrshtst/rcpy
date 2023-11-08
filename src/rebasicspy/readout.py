@@ -79,3 +79,12 @@ class Readout(object):
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         return self.Wout @ x[:, np.newaxis]
+
+
+def initialize_weights(shape: tuple[int, ...], initializer: str = "zeros") -> np.ndarray:
+    if initializer == "random":
+        return np.random.normal(0.0, 0.5, size=shape)
+    elif initializer == "zeros":
+        return np.zeros(shape, dtype=float)
+    else:
+        raise ValueError(f"Unknown initializer: {initializer}")

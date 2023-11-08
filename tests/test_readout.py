@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from rebasicspy.readout import Readout
+from rebasicspy.readout import Readout, initialize_weights
 
 
 @pytest.fixture
@@ -188,3 +188,17 @@ class TestReadout:
         readout.reset()
         with pytest.raises(RuntimeError):
             readout.predict(x)
+
+
+@pytest.mark.parametrize("shape", [(10,), (20, 4), (30, 1)])
+def test_initialize_weights_random(shape: tuple[int, ...]):
+    w = initialize_weights(shape, "random")
+    assert w.shape == shape
+
+
+@pytest.mark.parametrize("shape", [(10,), (20, 4), (30, 1)])
+def test_initialize_weights_zeros(shape: tuple[int, ...]):
+    w = initialize_weights(shape, "zeros")
+    assert w.shape == shape
+    for v in w.flatten():
+        assert v == 0.0
