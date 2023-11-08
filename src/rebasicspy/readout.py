@@ -98,3 +98,9 @@ def initialize_weights(shape: tuple[int, ...], initializer: str = "zeros") -> np
         return np.zeros(shape, dtype=float)
     else:
         raise ValueError(f"Unknown initializer: {initializer}")
+
+
+def compute_error(readout: Readout, x: np.ndarray, y_target: np.ndarray) -> np.ndarray:
+    y = readout.predict(x)
+    err = y_target - y
+    return err
