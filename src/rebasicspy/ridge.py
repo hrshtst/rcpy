@@ -117,7 +117,5 @@ class Ridge(Readout):
             self.__dict__.pop(attr, None)
         return super().reset()
 
-    def fit(self):
-        self.finalize_backward_batch()
+    def finalize(self):
         self._Wout = self.solve(self._solver, self._XXT, self._YXT, self.regularization)
-        return super().fit()

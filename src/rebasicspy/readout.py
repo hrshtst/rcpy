@@ -64,9 +64,15 @@ class Readout(object):
         if hasattr(self, "_Wout"):
             del self._Wout
 
+    def finalize(self):
+        # Finalize Wout here in derived class
+        raise NotImplementedError
+
     def fit(self):
         if self.has_nothing_to_process():
             raise RuntimeError(_ERR_MSG_READOUT_OPT_NOT_STARTED)
 
         if self.has_unprocessed_batch():
             self.finalize_backward_batch()
+
+        self.finalize()

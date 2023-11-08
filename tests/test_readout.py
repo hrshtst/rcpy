@@ -164,7 +164,10 @@ class TestReadout:
         x, y_target = dummy_data()
         readout.backward(x, y_target)
         assert readout._batch_finalized is False
-        readout.fit()
+        try:
+            readout.fit()
+        except NotImplementedError:
+            pass
         assert readout._batch_finalized is True
 
     def test_fit_raise_when_right_after_reset(self, readout: Readout):
