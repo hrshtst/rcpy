@@ -25,6 +25,12 @@ class Readout(object):
         else:
             self._batch_interval = val
 
+    def has_unprocessed_batch(self) -> bool:
+        return self._batch_count > 0
+
+    def has_nothing_to_process(self) -> bool:
+        return self._batch_count == 0 and not self._batch_processed
+
     @property
     def Wout(self) -> np.ndarray:
         if not hasattr(self, "_Wout"):

@@ -121,6 +121,37 @@ class TestReadout:
         assert readout._batch_processed is False
         assert readout._batch_finalized is False
 
+    def test_process_backward_batch_make_unprocessed_batch_false(self, readout: Readout):
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
+        assert readout.has_unprocessed_batch() is True
+        readout.process_backward_batch()
+        assert readout.has_unprocessed_batch() is False
+
+    def test_reset_make_unprocessed_batch_false(self, readout: Readout):
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
+        assert readout.has_unprocessed_batch() is True
+        readout.reset()
+        assert readout.has_unprocessed_batch() is False
+
+    def test_process_backward_batch_make_nothing_to_process_false(self, readout: Readout):
+        assert readout.has_nothing_to_process() is True
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
+        assert readout.has_nothing_to_process() is False
+        readout.process_backward_batch()
+        assert readout.has_nothing_to_process() is False
+
+    def test_reset_make_nothing_to_process_true(self, readout: Readout):
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
+        assert readout.has_nothing_to_process() is False
+        readout.finalize_backward_batch()
+        assert readout.has_nothing_to_process() is False
+        readout.reset()
+        assert readout.has_nothing_to_process() is True
+
     def test_reset_always_finalize_when_unprocessed_yet(self, readout: Readout):
         x, y_target = dummy_data()
         for _ in range(10):
