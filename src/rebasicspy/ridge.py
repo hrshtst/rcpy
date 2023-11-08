@@ -55,20 +55,28 @@ class Ridge(Readout):
             except AttributeError:
                 self._sample_weight = np.asarray([sample_weight], dtype=float)
 
+    @staticmethod
+    def _rescale(X: np.ndarray, Y: np.ndarray, sample_weight: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        sample_weight_sqrt = np.sqrt(sample_weight)
+        X = X * sample_weight_sqrt[:, np.newaxis]
+        if Y.ndim == 1:
+            Y = Y * sample_weight_sqrt
+        else:
+            Y = Y * sample_weight_sqrt[:, np.newaxis]
+        return X, Y
+
     def accumulate(self):
         try:
-            rooted_sample_weight = np.sqrt(self._sample_weight).reshape(-1, 1)
+            X, Y = self._rescale(self._X, self._Y, self._sample_weight)
         except AttributeError:
-            rooted_sample_weight = np.ones((len(self._X), 1))
-        sX = rooted_sample_weight * self._X
-        sY = rooted_sample_weight * self._Y
+            X, Y = self._X, self._Y
 
         try:
-            self._XXT += np.dot(sX.T, sX)
-            self._YXT += np.dot(sY.T, sX)
+            self._XXT += np.dot(X.T, X)
+            self._YXT += np.dot(Y.T, X)
         except AttributeError:
-            self._XXT = np.dot(sX.T, sX)
-            self._YXT = np.dot(sY.T, sX)
+            self._XXT = np.dot(X.T, X)
+            self._YXT = np.dot(Y.T, X)
 
     @staticmethod
     def solve(solver: str, XXT: np.ndarray, YXT: np.ndarray, alpha: float) -> np.ndarray:
