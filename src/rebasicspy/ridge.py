@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import linalg
 
 from rebasicspy.readout import Readout
 
@@ -10,12 +11,16 @@ class Ridge(Readout):
     _XXT: np.ndarray
     _YXT: np.ndarray
     _sample_weight: np.ndarray
+    _solver: str
 
-    def __init__(self, regularization: float | None = None, batch_interval: int | None = None):
+    def __init__(
+        self, regularization: float | None = None, solver: str = "cholesky", batch_interval: int | None = None
+    ):
         if regularization is None:
             self.regularization = 0.0
         else:
             self.regularization = regularization
+        self._solver = solver
         super().__init__(batch_interval=batch_interval)
 
     @property
@@ -26,6 +31,15 @@ class Ridge(Readout):
     def regularization(self, beta: float) -> float:
         self._regularization = beta
         return self._regularization
+
+    @property
+    def solver(self) -> str:
+        return self._solver
+
+    @solver.setter
+    def solver(self, _solver: str) -> str:
+        self._solver = _solver
+        return self._solver
 
     def stack(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None):
         try:
@@ -56,9 +70,17 @@ class Ridge(Readout):
             self._XXT = np.dot(sX.T, sX)
             self._YXT = np.dot(sY.T, sX)
 
-    def solve(self) -> np.ndarray:
-        X_pseudo_inv = np.linalg.inv(self._XXT + self.regularization * np.identity(len(self._XXT), dtype=float))
-        return np.dot(self._YXT, X_pseudo_inv)
+    @staticmethod
+    def solve(solver: str, XXT: np.ndarray, YXT: np.ndarray, alpha: float) -> np.ndarray:
+        ridge = alpha * np.identity(len(XXT), dtype=float)
+        if solver == "pseudoinv":
+            X_pseudo_inv = np.linalg.inv(XXT + ridge)
+            return np.dot(YXT, X_pseudo_inv)
+        elif solver == "cholesky":
+            w = linalg.solve(XXT + ridge, YXT.T, assume_a="sym")
+            return w.T
+        else:
+            raise ValueError(f"Unknown solver: {solver}. Choose from 'pseudoinv' or 'cholesky'.")
 
     def process_backward(
         self,
@@ -89,5 +111,5 @@ class Ridge(Readout):
 
     def fit(self):
         self.finalize_backward_batch()
-        self._Wout = self.solve()
+        self._Wout = self.solve(self._solver, self._XXT, self._YXT, self.regularization)
         return super().fit()

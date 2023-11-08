@@ -207,10 +207,22 @@ class TestRidge:
         ridge.backward(x, y, s)
         assert_array_equal(sample_weight[:3], ridge._sample_weight)
 
-    def test_fit_small_dataset(self, ridge: Ridge):
+    @pytest.mark.parametrize("solver", ["pseudoinv", "cholesky"])
+    def test_fit_small_dataset(self, ridge: Ridge, solver: str):
         data = SmallDataSet()
-        ridge.regularization = 0.001
+        ridge.solver = solver
         for x, y in data:
             ridge.backward(x, y)
         ridge.fit()
         assert_array_almost_equal(data.coef, ridge.Wout)
+
+    @pytest.mark.parametrize("solver", ["pseudoinv", "cholesky"])
+    @pytest.mark.parametrize("beta", [0.00001, 0.01])
+    def test_fit_small_dataset_with_regularization(self, ridge: Ridge, solver: str, beta: float):
+        data = SmallDataSet()
+        ridge.solver = solver
+        ridge.regularization = beta
+        for x, y in data:
+            ridge.backward(x, y)
+        ridge.fit()
+        assert_array_almost_equal(data.coef, ridge.Wout, decimal=2)
