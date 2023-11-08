@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import linalg
 
-from rebasicspy.readout import Readout
+from rebasicspy.readout import Readout, rescale_data
 
 
 class Ridge(Readout):
@@ -55,19 +55,9 @@ class Ridge(Readout):
             except AttributeError:
                 self._sample_weight = np.asarray([sample_weight], dtype=float)
 
-    @staticmethod
-    def _rescale(X: np.ndarray, Y: np.ndarray, sample_weight: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        sample_weight_sqrt = np.sqrt(sample_weight)
-        X = X * sample_weight_sqrt[:, np.newaxis]
-        if Y.ndim == 1:
-            Y = Y * sample_weight_sqrt
-        else:
-            Y = Y * sample_weight_sqrt[:, np.newaxis]
-        return X, Y
-
     def accumulate(self):
         try:
-            X, Y = self._rescale(self._X, self._Y, self._sample_weight)
+            X, Y = rescale_data(self._X, self._Y, self._sample_weight)
         except AttributeError:
             X, Y = self._X, self._Y
 
