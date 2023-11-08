@@ -121,6 +121,14 @@ class TestReadout:
         assert readout._batch_processed is False
         assert readout._batch_finalized is False
 
+    def test_reset_del_wout(self, readout: Readout):
+        x, y_target = dummy_data()
+        readout.backward(x, y_target)
+        readout.finalize_backward_batch()
+        readout._Wout = np.zeros((len(x), len(x)))
+        readout.reset()
+        assert not hasattr(readout, "_Wout")
+
     def test_process_backward_batch_make_unprocessed_batch_false(self, readout: Readout):
         x, y_target = dummy_data()
         readout.backward(x, y_target)

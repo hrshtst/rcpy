@@ -58,11 +58,11 @@ class Readout(object):
         self._batch_finalized = True
 
     def reset(self):
-        if hasattr(self, "_batch_processed") and not self._batch_processed:
-            self.finalize_backward_batch()
         self._batch_count = 0
         self._batch_processed = False
         self._batch_finalized = False
+        if hasattr(self, "_Wout"):
+            del self._Wout
 
     def fit(self):
         if self.has_nothing_to_process():
