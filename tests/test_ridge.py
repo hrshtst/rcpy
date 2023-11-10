@@ -3,7 +3,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from rebasicspy.ridge import Ridge
 
-from ._base import RandDataSet, SmallDataSet
+from ._base import RandDataSet, SmallDataSet, SmallDataSetMO
 
 
 @pytest.fixture
@@ -195,3 +195,12 @@ class TestRidge:
             ridge.backward(x, y)
         ridge.fit()
         assert_array_almost_equal(data.coef, ridge.Wout, decimal=2)
+
+    @pytest.mark.parametrize("solver", ["pseudoinv", "cholesky"])
+    def test_fit_small_dataset_multi_output(self, ridge: Ridge, solver: str):
+        data = SmallDataSetMO()
+        ridge.solver = solver
+        for x, y in data:
+            ridge.backward(x, y)
+        ridge.fit()
+        assert_array_almost_equal(data.coef, ridge.Wout)

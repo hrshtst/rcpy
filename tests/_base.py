@@ -27,11 +27,23 @@ class SmallDataSet(DataSetBase):
     def __init__(self):
         self.X = np.array([[1, 1], [1, 2], [2, 2], [2, 3]])
         #  y = 1 * x_0 + 2 * x_1
-        self.Y = np.dot(self.X, np.array([1, 2]))
+        self.Y = np.ravel(np.dot(self.X, self.coef.T))
 
     @property
     def coef(self):
-        return np.array([[1.0, 2.0]])
+        return np.array([[1, 2]], dtype=float)
+
+
+class SmallDataSetMO(DataSetBase):
+    def __init__(self):
+        self.X = np.array([[1, 1], [1, 2], [2, 2], [2, 3]])
+        #  y0 = 1 * x_0 +  2 * x_1
+        #  y1 = 2 * x_0 + -1 * x_1
+        self.Y = np.dot(self.X, self.coef.T)
+
+    @property
+    def coef(self):
+        return np.array([[1, 2], [2, -1]], dtype=float)
 
 
 class LargeDataSet(DataSetBase):
