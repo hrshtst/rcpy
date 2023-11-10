@@ -36,14 +36,14 @@ class SmallDataSet(DataSetBase):
 
 class SmallDataSetMO(DataSetBase):
     def __init__(self):
-        self.X = np.array([[1, 1], [1, 2], [2, 2], [2, 3]])
-        #  y0 = 1 * x_0 +  2 * x_1
-        #  y1 = 2 * x_0 + -1 * x_1
+        self.X = np.array([[1, 1, 1], [1, 2, 1], [2, 2, 2], [2, 3, 2], [3, 2, 2]])
+        #  y0 = 1 * x_0 +  2 * x_1 + -2 * x_2
+        #  y1 = 2 * x_0 + -1 * x_1 +  1 * x_2
         self.Y = np.dot(self.X, self.coef.T)
 
     @property
     def coef(self):
-        return np.array([[1, 2], [2, -1]], dtype=float)
+        return np.array([[1, 2, -2], [2, -1, 1]], dtype=float)
 
 
 class LargeDataSet(DataSetBase):
