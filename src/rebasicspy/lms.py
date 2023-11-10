@@ -1,6 +1,6 @@
 import numpy as np
 
-from rebasicspy.readout import Readout, compute_error, initialize_weights
+from rebasicspy.readout import Readout, compute_error, initialize_weights, rescale_data
 
 
 class LMS(Readout):
@@ -25,13 +25,17 @@ class LMS(Readout):
         return self._learning_rate
 
     def process_backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None):
+        # Rescale data
+        x, y_target = rescale_data(x, y_target, sample_weight)
+
         # Error estimation
-        y_target = np.atleast_1d(y_target)
         try:
             e = compute_error(self, x, y_target)
         except RuntimeError:
+            # Initialize Wout
             self._Wout = initialize_weights((len(y_target), len(x)), initializer=self._Wout_init)
             e = compute_error(self, x, y_target)
+
         # Tap-weight matrix adaptation
         dw = self.learning_rate * np.outer(e, x)
         self._Wout += dw
