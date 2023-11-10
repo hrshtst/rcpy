@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
-from rebasicspy.readout import Readout, initialize_weights, rescale_data
+from rebasicspy.readout import Readout, compute_error, initialize_weights, rescale_data
 
 
 @pytest.fixture
@@ -225,3 +225,21 @@ def test_initialize_weights_zeros(shape: tuple[int, ...]):
     assert w.shape == shape
     for v in w.flatten():
         assert v == 0.0
+
+
+def test_compute_error_scalar():
+    r = Readout()
+    r._Wout = np.array([[1.0, 2.0]])
+    x = np.array([3.0, 5.0])
+    y = 13.0
+    e = compute_error(r, x, y)
+    assert_array_equal(np.array([0.0]), e)
+
+
+def test_compute_error_vector():
+    r = Readout()
+    r._Wout = np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 2.0]])
+    x = np.array([3.0, 5.0, 1.0])
+    y = np.array([16.0, 31.0])
+    e = compute_error(r, x, y)
+    assert_array_equal(np.array([0.0, 0.0]), e)

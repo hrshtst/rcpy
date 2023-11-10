@@ -78,7 +78,7 @@ class Readout(object):
         self.finalize()
 
     def predict(self, x: np.ndarray) -> np.ndarray:
-        return self.Wout @ x[:, np.newaxis]
+        return self.Wout @ x
 
 
 def rescale_data(X: np.ndarray, y: np.ndarray, sample_weight: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -100,7 +100,7 @@ def initialize_weights(shape: tuple[int, ...], initializer: str = "zeros") -> np
         raise ValueError(f"Unknown initializer: {initializer}")
 
 
-def compute_error(readout: Readout, x: np.ndarray, y_target: np.ndarray) -> np.ndarray:
+def compute_error(readout: Readout, x: np.ndarray, y_target: float | int | np.ndarray) -> np.ndarray:
     y = readout.predict(x)
     err = y_target - y
     return err
