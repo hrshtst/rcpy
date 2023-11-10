@@ -7,11 +7,8 @@ class LMS(Readout):
     _learning_rate: float
     _Wout_init: str
 
-    def __init__(self, learning_rate: float | None = None, Wout_init: str = "zeros"):
-        if learning_rate is None:
-            self.learning_rate = 0.1
-        else:
-            self.learning_rate = learning_rate
+    def __init__(self, learning_rate: float = 0.1, Wout_init: str = "zeros"):
+        self.learning_rate = learning_rate
         self._Wout_init = Wout_init
         super().__init__(batch_interval=1)
 
