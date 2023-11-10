@@ -213,6 +213,14 @@ def test_rescale_data(n_output):
     assert_array_equal(expected_y, actual_y)
 
 
+def test_rescale_data_scalar():
+    X, y, sw = np.array([1.0, 2.0]), 1.0, 4.0
+    expected_X, expected_y = np.array([2.0, 4.0]), np.array([2.0])
+    actual_X, actual_y = rescale_data(X, y, sw)
+    assert_array_equal(expected_X, actual_X)
+    assert_array_equal(expected_y, actual_y)
+
+
 @pytest.mark.parametrize("shape", [(10,), (20, 4), (30, 1)])
 def test_initialize_weights_random(shape: tuple[int, ...]):
     w = initialize_weights(shape, "random")

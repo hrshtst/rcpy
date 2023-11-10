@@ -81,9 +81,19 @@ class Readout(object):
         return self.Wout @ x
 
 
-def rescale_data(X: np.ndarray, y: np.ndarray, sample_weight: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    sample_weight_sqrt = np.sqrt(sample_weight)
-    X = X * sample_weight_sqrt[:, np.newaxis]
+def rescale_data(
+    X: np.ndarray, y: float | int | np.ndarray, sample_weight: float | int | np.ndarray | None
+) -> tuple[np.ndarray, np.ndarray]:
+    if sample_weight is None:
+        return X, np.atleast_1d(y)
+
+    sample_weight_sqrt = np.sqrt(np.atleast_1d(sample_weight))
+    if X.ndim == 1:
+        X = X * sample_weight_sqrt
+    else:
+        X = X * sample_weight_sqrt[:, np.newaxis]
+
+    y = np.atleast_1d(y)
     if y.ndim == 1:
         y = y * sample_weight_sqrt
     else:
