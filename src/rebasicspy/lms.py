@@ -1,6 +1,8 @@
+import warnings
+
 import numpy as np
 
-from rebasicspy.readout import Readout, compute_error, initialize_weights, rescale_data
+from rebasicspy.readout import Readout, compute_error, initialize_weights
 
 
 class LMS(Readout):
@@ -22,15 +24,16 @@ class LMS(Readout):
         return self._learning_rate
 
     def process_backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None):
-        # Rescale data
-        x, y_target = rescale_data(x, y_target, sample_weight)
-
         # Error estimation
         try:
             e = compute_error(self, x, y_target)
         except RuntimeError:
             # Initialize Wout
+            y_target = np.atleast_1d(y_target)
             self._Wout = initialize_weights((len(y_target), len(x)), initializer=self._Wout_init)
+            # Warning if sample_weight is given
+            if sample_weight is not None:
+                warnings.warn("Least-squares method does not support weighted algorithms", UserWarning)
             e = compute_error(self, x, y_target)
 
         # Tap-weight matrix adaptation
