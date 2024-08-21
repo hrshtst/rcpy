@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 def mean_squared_error(
     y: Iterable[float | Iterable[float]],
     y_target: Iterable[float | Iterable[float]],
+    *,
     root: bool = False,
     raw_values: Literal[False] = ...,
 ) -> float: ...
@@ -26,6 +27,7 @@ def mean_squared_error(
 def mean_squared_error(
     y: Iterable[float | Iterable[float]],
     y_target: Iterable[float | Iterable[float]],
+    *,
     root: bool = False,
     raw_values: Literal[True] = ...,
 ) -> np.ndarray: ...
@@ -34,6 +36,7 @@ def mean_squared_error(
 def mean_squared_error(
     y: Iterable[float | Iterable[float]],
     y_target: Iterable[float | Iterable[float]],
+    *,
     root: bool = False,
     raw_values: bool = False,
 ) -> float | np.ndarray:
