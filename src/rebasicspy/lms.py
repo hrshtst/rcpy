@@ -58,3 +58,8 @@ class LMS(Readout):
 
     def reset(self) -> None:
         return super().reset()
+
+
+# Local Variables:
+# jinx-local-words: "Wout"
+# End:

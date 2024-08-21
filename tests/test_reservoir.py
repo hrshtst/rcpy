@@ -238,7 +238,7 @@ class TestReservoir:
         assert np.any(Win_array < 0)
         assert np.any(Win_array > 0)
 
-        # Check if Win is an expected sparity type
+        # Check if Win is an expected sparsity type
         assert type(Win) is expected_type
 
     def test_initialize_input_weights_check_bias_scaling(self, default_reservoir: Reservoir) -> None:
@@ -542,7 +542,7 @@ class TestReservoir:
         assert np.any(Wfb_array < 0)
         assert np.any(Wfb_array > 0)
 
-        # Check if Wfb is an expected sparity type
+        # Check if Wfb is an expected sparsity type
         assert type(Wfb) is expected_type
 
     @pytest.mark.parametrize(
@@ -691,3 +691,8 @@ class TestReservoir:
         with pytest.raises(RuntimeError) as exinfo:
             _ = default_reservoir.forward(u)
         assert str(exinfo.value).startswith("Reservoir has feedback connection, but no feedback signal was given.")
+
+
+# Local Variables:
+# jinx-local-words: "Wfb csc csr fb noqa rc rng sr"
+# End:

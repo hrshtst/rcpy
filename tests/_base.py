@@ -67,3 +67,8 @@ class LargeDataSet(DataSetBase):
     @property
     def coef(self) -> np.ndarray:
         return np.array([[2.0, 0.1, -4.0, 0.5]])
+
+
+# Local Variables:
+# jinx-local-words: "noqa"
+# End:

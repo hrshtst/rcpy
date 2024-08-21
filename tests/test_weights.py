@@ -253,3 +253,8 @@ def test_initialize_weights_raise_exception_when_shape_of_scaling_incorrect(
     pattern = "The size of `scaling` is mismatched with `weights`."
     with pytest.raises(ValueError, match=pattern):
         _ = initialize_weights((size, in_dim), uniform, scaling=scaling, sparsity_type=sparsity)
+
+
+# Local Variables:
+# jinx-local-words: "csc csr loc noqa sr"
+# End:

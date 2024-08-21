@@ -74,3 +74,8 @@ class TestLMS:
             lms.backward(x, y)
         lms.fit()
         assert_array_almost_equal(data.coef, lms.Wout, decimal=1)
+
+
+# Local Variables:
+# jinx-local-words: "lr noqa"
+# End:

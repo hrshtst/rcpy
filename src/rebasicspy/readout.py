@@ -123,3 +123,8 @@ def initialize_weights(shape: tuple[int, ...], initializer: str = "zeros") -> np
 def compute_error(readout: Readout, x: np.ndarray, y_target: float | np.ndarray) -> np.ndarray:
     y = readout.predict(x)
     return y_target - y  # return error
+
+
+# Local Variables:
+# jinx-local-words: "Wout"
+# End:

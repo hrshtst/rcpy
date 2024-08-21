@@ -114,3 +114,8 @@ class Ridge(Readout):
 
     def finalize(self) -> None:
         self._Wout = self.solve(self._solver, self._XXT, self._YXT, self.regularization)
+
+
+# Local Variables:
+# jinx-local-words: "cholesky pseudoinv sym"
+# End:

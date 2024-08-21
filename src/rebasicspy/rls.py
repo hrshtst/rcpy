@@ -58,8 +58,8 @@ class RLS(Readout):
 
         # Inverse of autocorrelation matrix update
         self._P = (1.0 / self.forgetting_factor) * (self._P - np.outer(k, u))
-        # Make the inverse of autocorrelation matrix symmetrix to
-        # avoid numrical unstability.
+        # Make the inverse of autocorrelation matrix symmetric to
+        # avoid numerical instability.
         tril = np.tril_indices(self._P.shape[0])
         self._P[tril] = self._P.T[tril]
 
@@ -82,3 +82,8 @@ class RLS(Readout):
 
     def reset(self) -> None:
         return super().reset()
+
+
+# Local Variables:
+# jinx-local-words: "Wout autocorrelation"
+# End:

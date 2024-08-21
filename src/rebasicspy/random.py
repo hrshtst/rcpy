@@ -77,3 +77,8 @@ def noise(
     if shape is None:
         shape = 1
     return np.zeros(shape, dtype=float)
+
+
+# Local Variables:
+# jinx-local-words: "bernoulli noqa scipy"
+# End:

@@ -58,3 +58,8 @@ def test_get_rvs_raise_exception_when_unknown_distribution_given() -> None:
     pattern = "`hoge` is unavailable for probability distribution in 'scipy.stats'."
     with pytest.raises(ValueError, match=pattern):
         _ = get_rvs(rng, "hoge")
+
+
+# Local Variables:
+# jinx-local-words: "hoge noqa scipy"
+# End:

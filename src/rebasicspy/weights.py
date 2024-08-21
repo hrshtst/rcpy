@@ -316,3 +316,8 @@ def _scale_inputs(weights: WeightsType, scaling: float | Iterable[float]) -> Wei
         return weights * diags(scaling)
     msg = "The size of `scaling` is mismatched with `weights`."
     raise ValueError(msg)
+
+
+# Local Variables:
+# jinx-local-words: "bernoulli csc csr noqa rescaling"
+# End:

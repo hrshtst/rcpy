@@ -45,5 +45,5 @@ def tests(session: nox.Session) -> None:
 
 
 # Local Variables:
-# jinx-local-words: "dev pytest uv virtualenv"
+# jinx-local-words: "dev py pytest uv virtualenv"
 # End:

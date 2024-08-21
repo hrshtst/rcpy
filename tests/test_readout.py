@@ -259,3 +259,8 @@ def test_compute_error_vector() -> None:
     y = np.array([16.0, 31.0])
     e = compute_error(r, x, y)
     assert_array_equal(np.array([0.0, 0.0]), e)
+
+
+# Local Variables:
+# jinx-local-words: "Wout noqa"
+# End:

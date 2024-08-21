@@ -31,7 +31,7 @@ class MetaNodeRegistry(type):
         return cls.get_iter(recursive=False)
 
     def get_instances(cls, *, recursive=False) -> list:
-        """Get all Node instaces in the registry.
+        """Get all Node instances in the registry.
 
         If recursive=True, search subclasses recursively.
         """
@@ -43,7 +43,7 @@ class MetaNodeRegistry(type):
         return list(set(instances))
 
     def get_id(cls, *, recursive=False) -> int:
-        """Get an ID for an insntace that is being created now on.
+        """Get an ID for an instance that is being created now on.
 
         If recursive=True, search subclasses recursively. This method
         supposed to be called in __init__ of a class with this
@@ -124,3 +124,8 @@ class Model:
         if to_node not in edges:
             edges.append(to_node)
         return self
+
+
+# Local Variables:
+# jinx-local-words: "init metaclass noqa subclass"
+# End:

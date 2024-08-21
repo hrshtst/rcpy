@@ -71,3 +71,8 @@ class TestRLS:
             rls.backward(x, y)
         rls.fit()
         assert_array_almost_equal(data.coef, rls.Wout, decimal=1)
+
+
+# Local Variables:
+# jinx-local-words: "lr noqa"
+# End:

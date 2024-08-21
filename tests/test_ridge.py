@@ -208,3 +208,8 @@ class TestRidge:
             ridge.backward(x, y)
         ridge.fit()
         assert_array_almost_equal(data.coef, ridge.Wout)
+
+
+# Local Variables:
+# jinx-local-words: "cholesky noqa pseudoinv"
+# End:

@@ -266,7 +266,7 @@ class Reservoir:
                 seed=seed,
             ),
         )
-        _ = bias  # supress lint error
+        _ = bias  # suppress lint error
         return bias
 
     def initialize_input_weights(
@@ -405,3 +405,8 @@ class Reservoir:
             raise RuntimeError(msg)
 
         return self._forward_fn(u, y)
+
+
+# Local Variables:
+# jinx-local-words: "Wfb csr fb"
+# End:
