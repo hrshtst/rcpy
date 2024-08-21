@@ -1,12 +1,23 @@
+# ruff: noqa: ANN401,PGH003,PLR2004,SLF001
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
+from scipy.sparse import csc_matrix, csr_matrix
+
 from rebasicspy.activations import identity, relu, sigmoid, softmax, tanh
-from rebasicspy.metrics import WeightsType
 from rebasicspy.random import get_rng
 from rebasicspy.reservoir import Reservoir, ReservoirBuilder
 from rebasicspy.weights import normal, ones, uniform
-from scipy.sparse import csc_matrix, csr_matrix
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from rebasicspy._type import SparsityType
+    from rebasicspy.metrics import WeightsType
 
 
 def get_default_builder() -> ReservoirBuilder:
@@ -28,30 +39,29 @@ def default_reservoir() -> Reservoir:
 def actual_spectral_radius(w: WeightsType) -> float:
     if isinstance(w, np.ndarray):
         return max(abs(np.linalg.eigvals(w)))
-    else:
-        return max(abs(np.linalg.eigvals(w.toarray())))
+    return max(abs(np.linalg.eigvals(w.toarray())))
 
 
 def actual_connectivity(w: WeightsType) -> float:
     if isinstance(w, np.ndarray):
         return np.count_nonzero(w) / (w.shape[0] * w.shape[1])
-    else:
+    if w.shape is not None:
         return w.nnz / (w.shape[0] * w.shape[1])
+    raise RuntimeError
 
 
 def ensure_ndarray(w: WeightsType) -> np.ndarray:
     if isinstance(w, np.ndarray):
         return w
-    else:
-        return w.toarray()
+    return w.toarray()
 
 
 class TestReservoir:
-    def test_init_builder_should_be_copied(self, default_builder: ReservoirBuilder):
+    def test_init_builder_should_be_copied(self, default_builder: ReservoirBuilder) -> None:
         res = Reservoir(default_builder)
         assert res._builder is not default_builder
 
-    def test_init_x(self, default_reservoir: Reservoir):
+    def test_init_x(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir.x.shape == (15,)
         assert default_reservoir.state.shape == (15,)
         assert default_reservoir.internal_state.shape == (15,)
@@ -62,30 +72,30 @@ class TestReservoir:
         assert np.all(default_reservoir.state == 0.0)
         assert np.all(default_reservoir.internal_state == 0.0)
 
-    def test_init_activation(self, default_reservoir: Reservoir):
+    def test_init_activation(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir.activation is tanh
         assert default_reservoir.fb_activation is identity
 
-    def test_init_noise_gain(self, default_reservoir: Reservoir):
+    def test_init_noise_gain(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir.noise_gain_rc == 0.0
         assert default_reservoir.noise_gain_in == 0.0
         assert default_reservoir.noise_gain_fb == 0.0
-        assert default_reservoir.noise_generator.keywords["rng"] == get_rng()
-        assert default_reservoir.noise_generator.keywords["dist"] is "normal"
+        assert default_reservoir.noise_generator.keywords["rng"] == get_rng()  # type: ignore
+        assert default_reservoir.noise_generator.keywords["dist"] == "normal"  # type: ignore
 
-    def test_init_leaking_rate(self, default_reservoir: Reservoir):
+    def test_init_leaking_rate(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir.leaking_rate == 0.98
 
-    def test_init_seed(self, default_reservoir: Reservoir):
+    def test_init_seed(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir._seed is None
 
-    def test_has_bias_input(self, default_reservoir: Reservoir):
+    def test_has_bias_input(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir.has_input_bias()
         default_reservoir.initialize_input_weights(0, bias_scaling=False)
         assert not default_reservoir.has_input_bias()
 
-    @pytest.mark.parametrize("f,h", [(sigmoid, tanh), (softmax, relu)])
-    def test_initialize_activation(self, f, h):
+    @pytest.mark.parametrize(("f", "h"), [(sigmoid, tanh), (softmax, relu)])
+    def test_initialize_activation(self, f: Callable, h: Callable) -> None:
         builder = ReservoirBuilder(
             reservoir_size=5,
             spectral_radius=0.95,
@@ -98,8 +108,8 @@ class TestReservoir:
         assert res.activation is f
         assert res.fb_activation is h
 
-    @pytest.mark.parametrize("g_rc,g_in,g_fb,dist", [(0.1, 0.2, 0.3, "uniform"), (0.03, 0.02, 0.01, "beta")])
-    def test_initialize_noise_generator(self, g_rc, g_in, g_fb, dist):
+    @pytest.mark.parametrize(("g_rc", "g_in", "g_fb", "dist"), [(0.1, 0.2, 0.3, "uniform"), (0.03, 0.02, 0.01, "beta")])
+    def test_initialize_noise_generator(self, g_rc: float, g_in: float, g_fb: float, dist: str) -> None:
         builder = ReservoirBuilder(
             reservoir_size=5,
             spectral_radius=0.95,
@@ -115,10 +125,10 @@ class TestReservoir:
         assert res.noise_gain_rc == g_rc
         assert res.noise_gain_in == g_in
         assert res.noise_gain_fb == g_fb
-        assert res.noise_generator.keywords["rng"] is rng
-        assert res.noise_generator.keywords["dist"] == dist
+        assert res.noise_generator.keywords["rng"] is rng  # type: ignore
+        assert res.noise_generator.keywords["dist"] == dist  # type: ignore
 
-    def test_initialize_internal_weights(self, default_reservoir: Reservoir):
+    def test_initialize_internal_weights(self, default_reservoir: Reservoir) -> None:
         W = default_reservoir.W
         assert W.shape == (15, 15)
         assert default_reservoir.size == 15
@@ -132,15 +142,26 @@ class TestReservoir:
         assert type(W) is csr_matrix
 
     @pytest.mark.parametrize(
-        "reservoir_size,sr,p,dist,sparsity,expected_type",
+        ("reservoir_size", "sr", "p", "dist", "sparsity", "expected_type"),
         [(10, 1.3, 0.15, normal, "dense", np.ndarray), (20, 0.9, 0.1, uniform, "csc", csc_matrix)],
     )
     def test_initialize_internal_weights_reinitialize(
-        self, default_reservoir: Reservoir, reservoir_size, sr, p, dist, sparsity, expected_type
-    ):
+        self,
+        default_reservoir: Reservoir,
+        reservoir_size: int,
+        sr: float,
+        p: float,
+        dist: Callable,
+        sparsity: SparsityType,
+        expected_type: Any,
+    ) -> None:
         W0_array = ensure_ndarray(default_reservoir.W)
         W = default_reservoir.initialize_internal_weights(
-            reservoir_size=reservoir_size, spectral_radius=sr, connectivity=p, W_init=dist, sparsity_type=sparsity
+            reservoir_size=reservoir_size,
+            spectral_radius=sr,
+            connectivity=p,
+            W_init=dist,
+            sparsity_type=sparsity,
         )
         assert W.shape == (reservoir_size, reservoir_size)
         assert default_reservoir.size == reservoir_size
@@ -150,7 +171,7 @@ class TestReservoir:
         with pytest.raises(AssertionError):
             assert_array_equal(W0_array, ensure_ndarray(W))
 
-    def test_initialize_input_weights(self, default_reservoir: Reservoir):
+    def test_initialize_input_weights(self, default_reservoir: Reservoir) -> None:
         input_dim = 3
         default_reservoir.initialize_input_weights(input_dim)
         Win = default_reservoir.Win
@@ -171,7 +192,7 @@ class TestReservoir:
         assert type(Win) is np.ndarray
 
     @pytest.mark.parametrize(
-        "input_dim,reservoir_size,scaling,p,bias_scaling,dist,sparsity,expected_type",
+        ("input_dim", "reservoir_size", "scaling", "p", "bias_scaling", "dist", "sparsity", "expected_type"),
         [
             (2, 10, 1.5, 0.5, 0.0, normal, "csr", csr_matrix),
             (4, 20, 0.5, 0.2, 0.1, uniform, "csc", csc_matrix),
@@ -180,15 +201,15 @@ class TestReservoir:
     def test_initialize_input_weights_reinitialize(
         self,
         default_reservoir: Reservoir,
-        input_dim,
-        reservoir_size,
-        scaling,
-        p,
-        bias_scaling,
-        dist,
-        sparsity,
-        expected_type,
-    ):
+        input_dim: int,
+        reservoir_size: int,
+        scaling: float,
+        p: float,
+        bias_scaling: float,
+        dist: Callable,
+        sparsity: SparsityType,
+        expected_type: Any,
+    ) -> None:
         default_reservoir.initialize_input_weights(
             input_dim,
             reservoir_size=reservoir_size,
@@ -220,7 +241,7 @@ class TestReservoir:
         # Check if Win is an expected sparity type
         assert type(Win) is expected_type
 
-    def test_initialize_input_weights_check_bias_scaling(self, default_reservoir: Reservoir):
+    def test_initialize_input_weights_check_bias_scaling(self, default_reservoir: Reservoir) -> None:
         input_dim = 3
         Win = default_reservoir.initialize_input_weights(input_dim, bias_scaling=0.5)
         assert Win.shape == (default_reservoir.size, input_dim)
@@ -236,19 +257,19 @@ class TestReservoir:
         assert np.any(Win < -0.5)
 
     @pytest.mark.parametrize("bias", [0.0, False])
-    def test_initialize_input_weights_when_bias_is_zero(self, default_reservoir: Reservoir, bias):
+    def test_initialize_input_weights_when_bias_is_zero(self, default_reservoir: Reservoir, bias: float | bool) -> None:
         input_dim = 2
         Win = default_reservoir.initialize_input_weights(input_dim, bias_scaling=bias)
         assert Win.shape == (default_reservoir.size, input_dim)
 
         # When bias is zero or False, bias vector should be zero.
-        bias = default_reservoir.bias
+        initialized_bias = default_reservoir.bias
         assert not default_reservoir.has_input_bias()
-        assert bias.shape == (default_reservoir.size,)
-        assert np.all(bias == 0.0)
-        assert type(bias) is np.ndarray
+        assert initialized_bias.shape == (default_reservoir.size,)
+        assert np.all(initialized_bias == 0.0)
+        assert type(initialized_bias) is np.ndarray
 
-    def test_initialize_input_weights_allow_zero_dimension(self, default_reservoir: Reservoir):
+    def test_initialize_input_weights_allow_zero_dimension(self, default_reservoir: Reservoir) -> None:
         Nx = default_reservoir._builder.reservoir_size
         Win = default_reservoir.initialize_input_weights(0)
         assert Win.shape == (Nx, 0)
@@ -265,7 +286,7 @@ class TestReservoir:
         assert type(bias) is np.ndarray
 
     @pytest.mark.parametrize(
-        "input_dim,scaling",
+        ("input_dim", "scaling"),
         [
             (2, (0.1, 0.2)),
             (2, (0.5, 1.0)),
@@ -276,19 +297,22 @@ class TestReservoir:
         ],
     )
     def test_initialize_input_weights_allow_element_wise_scaling(
-        self, default_reservoir: Reservoir, input_dim: int, scaling: tuple[int, ...]
-    ):
+        self,
+        default_reservoir: Reservoir,
+        input_dim: int,
+        scaling: tuple[int, ...],
+    ) -> None:
         size = default_reservoir.size
         Win = default_reservoir.initialize_input_weights(input_dim, input_scaling=scaling, Win_init=ones)
         assert Win.shape == (size, input_dim)
         Win_array = ensure_ndarray(Win)
-        I = np.ones(size, dtype=float)
+        E = np.ones(size, dtype=float)
         for i, s in enumerate(scaling):
             Win_i = Win_array[:, i]
-            assert_array_equal(Win_i, s * I)
+            assert_array_equal(Win_i, s * E)
 
     @pytest.mark.parametrize(
-        "input_dim,scaling",
+        ("input_dim", "scaling"),
         [
             (3, (0.1, 0.2)),
             (2, (0.1, 0.2, 0.3)),
@@ -296,23 +320,27 @@ class TestReservoir:
         ],
     )
     def test_initialize_input_weights_raise_exception_when_input_scaling_size_mismatch(
-        self, default_reservoir: Reservoir, input_dim: int, scaling: tuple[int, ...]
-    ):
-        with pytest.raises(ValueError) as exinfo:
+        self,
+        default_reservoir: Reservoir,
+        input_dim: int,
+        scaling: tuple[int, ...],
+    ) -> None:
+        pattern = "The size of `input_scaling` is mismatched with `input_dim`."
+        with pytest.raises(ValueError, match=pattern) as exinfo:
             _ = default_reservoir.initialize_input_weights(input_dim, input_scaling=scaling)
         assert str(exinfo.value) == "The size of `input_scaling` is mismatched with `input_dim`."
 
-    def test_raise_exception_when_access_Win_before_initialization(self):
+    def test_raise_exception_when_access_Win_before_initialization(self) -> None:
         res = Reservoir(get_default_builder())
         with pytest.raises(RuntimeError):
             _ = res.Win
 
-    def test_raise_exception_when_access_bias_before_initialization(self):
+    def test_raise_exception_when_access_bias_before_initialization(self) -> None:
         res = Reservoir(get_default_builder())
         with pytest.raises(RuntimeError):
             _ = res.bias
 
-    def test_kernel(self, default_reservoir: Reservoir):
+    def test_kernel(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         W = default_reservoir.W
@@ -326,7 +354,7 @@ class TestReservoir:
 
         assert_array_almost_equal(expected, actual)
 
-    def test_kernel_zero_input(self, default_reservoir: Reservoir):
+    def test_kernel_zero_input(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = 0
         W = default_reservoir.W
@@ -341,7 +369,7 @@ class TestReservoir:
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(bias, actual)
 
-    def test_kernel_input_noise(self, default_reservoir: Reservoir):
+    def test_kernel_input_noise(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         W = default_reservoir.W
@@ -356,7 +384,7 @@ class TestReservoir:
 
         assert not np.any(no_noise == actual)
 
-    def test_forward_internal(self, default_reservoir: Reservoir):
+    def test_forward_internal(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         u = np.ones(input_dim)
@@ -370,7 +398,7 @@ class TestReservoir:
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(expected, default_reservoir.state)
 
-    def test_forward_internal_zero_input(self, default_reservoir: Reservoir):
+    def test_forward_internal_zero_input(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = 0
         default_reservoir.initialize_input_weights(input_dim)
@@ -385,7 +413,7 @@ class TestReservoir:
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(expected, default_reservoir.state)
 
-    def test_forward_internal_rc_noise(self, default_reservoir: Reservoir):
+    def test_forward_internal_rc_noise(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         u = np.ones(input_dim)
@@ -399,7 +427,7 @@ class TestReservoir:
 
         assert not np.any(no_noise == actual)
 
-    def test_forward_external(self, default_reservoir: Reservoir):
+    def test_forward_external(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         u = np.ones(input_dim)
@@ -416,7 +444,7 @@ class TestReservoir:
         assert_array_almost_equal(x_next, default_reservoir.state)
         assert_array_equal(s_next, default_reservoir.internal_state)
 
-    def test_forward_external_zero_input(self, default_reservoir: Reservoir):
+    def test_forward_external_zero_input(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = 0
         default_reservoir.initialize_input_weights(input_dim)
@@ -434,7 +462,7 @@ class TestReservoir:
         assert_array_almost_equal(x_next, default_reservoir.state)
         assert_array_equal(s_next, default_reservoir.internal_state)
 
-    def test_forward_external_rc_noise(self, default_reservoir: Reservoir):
+    def test_forward_external_rc_noise(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         u = np.ones(input_dim)
@@ -451,14 +479,14 @@ class TestReservoir:
         assert not np.any(s_next == default_reservoir.internal_state)
         assert not np.any(x_next == actual)
 
-    def test_has_feedback(self, default_reservoir: Reservoir):
+    def test_has_feedback(self, default_reservoir: Reservoir) -> None:
         assert not default_reservoir.has_feedback()
 
-    def test_raise_exception_when_access_Wfb_before_init(self, default_reservoir: Reservoir):
+    def test_raise_exception_when_access_Wfb_before_init(self, default_reservoir: Reservoir) -> None:
         with pytest.raises(RuntimeError):
             _ = default_reservoir.Wfb
 
-    def test_initialize_feedback_weights(self, default_reservoir: Reservoir):
+    def test_initialize_feedback_weights(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         output_dim = 3
         default_reservoir.initialize_feedback_weights(output_dim)
@@ -477,7 +505,7 @@ class TestReservoir:
         assert type(Wfb) is np.ndarray
 
     @pytest.mark.parametrize(
-        "output_dim,reservoir_size,scaling,p,dist,sparsity,expected_type",
+        ("output_dim", "reservoir_size", "scaling", "p", "dist", "sparsity", "expected_type"),
         [
             (2, 10, 1.5, 0.5, normal, "csr", csr_matrix),
             (4, 20, 0.5, 0.2, uniform, "csc", csc_matrix),
@@ -486,14 +514,14 @@ class TestReservoir:
     def test_initialize_feedback_weights_reinitialize(
         self,
         default_reservoir: Reservoir,
-        output_dim,
-        reservoir_size,
-        scaling,
-        p,
-        dist,
-        sparsity,
-        expected_type,
-    ):
+        output_dim: int,
+        reservoir_size: int,
+        scaling: float,
+        p: float,
+        dist: Callable,
+        sparsity: SparsityType,
+        expected_type: Any,
+    ) -> None:
         default_reservoir.initialize_feedback_weights(
             output_dim,
             reservoir_size=reservoir_size,
@@ -518,7 +546,7 @@ class TestReservoir:
         assert type(Wfb) is expected_type
 
     @pytest.mark.parametrize(
-        "output_dim,scaling",
+        ("output_dim", "scaling"),
         [
             (2, (0.1, 0.2)),
             (2, (0.5, 1.0)),
@@ -529,20 +557,23 @@ class TestReservoir:
         ],
     )
     def test_initialize_feedback_weights_allow_element_wise_scaling(
-        self, default_reservoir: Reservoir, output_dim: int, scaling: tuple[int, ...]
-    ):
+        self,
+        default_reservoir: Reservoir,
+        output_dim: int,
+        scaling: tuple[int, ...],
+    ) -> None:
         size = default_reservoir.size
         Wfb = default_reservoir.initialize_feedback_weights(output_dim, fb_scaling=scaling, Wfb_init=ones)
         assert Wfb.shape == (size, output_dim)
         assert default_reservoir.has_feedback()
         Wfb_array = ensure_ndarray(Wfb)
-        I = np.ones(size, dtype=float)
+        E = np.ones(size, dtype=float)
         for i, s in enumerate(scaling):
             Wfb_i = Wfb_array[:, i]
-            assert_array_equal(Wfb_i, s * I)
+            assert_array_equal(Wfb_i, s * E)
 
     @pytest.mark.parametrize(
-        "output_dim,scaling",
+        ("output_dim", "scaling"),
         [
             (3, (0.1, 0.2)),
             (2, (0.1, 0.2, 0.3)),
@@ -550,13 +581,17 @@ class TestReservoir:
         ],
     )
     def test_initialize_feedback_weights_raise_exception_when_fb_scaling_size_mismatch(
-        self, default_reservoir: Reservoir, output_dim: int, scaling: tuple[int, ...]
-    ):
-        with pytest.raises(ValueError) as exinfo:
+        self,
+        default_reservoir: Reservoir,
+        output_dim: int,
+        scaling: tuple[int, ...],
+    ) -> None:
+        pattern = "The size of `fb_scaling` is mismatched with `output_dim`."
+        with pytest.raises(ValueError, match=pattern) as exinfo:
             _ = default_reservoir.initialize_feedback_weights(output_dim, fb_scaling=scaling)
         assert str(exinfo.value) == "The size of `fb_scaling` is mismatched with `output_dim`."
 
-    def test_kernel_with_feedback(self, default_reservoir: Reservoir):
+    def test_kernel_with_feedback(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         output_dim = 3
@@ -575,7 +610,7 @@ class TestReservoir:
 
         assert_array_almost_equal(expected, actual)
 
-    def test_kernel_with_feedback_noise(self, default_reservoir: Reservoir):
+    def test_kernel_with_feedback_noise(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         output_dim = 3
@@ -595,7 +630,7 @@ class TestReservoir:
 
         assert not np.any(no_noise == actual)
 
-    def test_forward_internal_with_feedback(self, default_reservoir: Reservoir):
+    def test_forward_internal_with_feedback(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         output_dim = 3
@@ -613,7 +648,7 @@ class TestReservoir:
         assert_array_almost_equal(expected, actual)
         assert_array_almost_equal(expected, default_reservoir.state)
 
-    def test_forward_external_with_feedback(self, default_reservoir: Reservoir):
+    def test_forward_external_with_feedback(self, default_reservoir: Reservoir) -> None:
         size = default_reservoir.size
         input_dim = default_reservoir.input_dim
         output_dim = 3
@@ -634,7 +669,7 @@ class TestReservoir:
         assert_array_almost_equal(x_next, default_reservoir.state)
         assert_array_equal(s_next, default_reservoir.internal_state)
 
-    def test_forward_raise_exception_when_y_is_given_before_init(self, default_reservoir: Reservoir):
+    def test_forward_raise_exception_when_y_is_given_before_init(self, default_reservoir: Reservoir) -> None:
         input_dim = default_reservoir.input_dim
         output_dim = 3
         u = np.ones(input_dim)
@@ -646,7 +681,7 @@ class TestReservoir:
             _ = default_reservoir.forward(u, y)
         assert str(exinfo.value).startswith("Feedback weights have not been initialized yet.")
 
-    def test_forward_raise_exception_when_y_is_not_given_after_init(self, default_reservoir: Reservoir):
+    def test_forward_raise_exception_when_y_is_not_given_after_init(self, default_reservoir: Reservoir) -> None:
         input_dim = default_reservoir.input_dim
         output_dim = 3
         u = np.ones(input_dim)

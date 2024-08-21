@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import copy
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Iterable
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from rebasicspy._type import SparsityType, WeightsType
 from rebasicspy.activations import identity, tanh
 from rebasicspy.random import get_rng, noise
 from rebasicspy.weights import initialize_weights, uniform
+
+if TYPE_CHECKING:
+    from rebasicspy._type import SparsityType, WeightsType
 
 
 @dataclass
@@ -36,14 +41,14 @@ class ReservoirBuilder:
 
 
 _ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED = (
-    f"Input weights have not been initialized yet. Call `initialize_input_weights` first."
+    "Input weights have not been initialized yet. Call `initialize_input_weights` first."
 )
 _ERR_MSG_FEEDBACK_WEIGHTS_NOT_INITIALIZED = (
-    f"Feedback weights have not been initialized yet. Call `initialize_feedback_weights` first."
+    "Feedback weights have not been initialized yet. Call `initialize_feedback_weights` first."
 )
 
 
-class Reservoir(object):
+class Reservoir:
     _builder: ReservoirBuilder
     _x: np.ndarray
     _s: np.ndarray
@@ -61,7 +66,7 @@ class Reservoir(object):
     _seed: int | None
     _forward_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
 
-    def __init__(self, builder: ReservoirBuilder):
+    def __init__(self, builder: ReservoirBuilder) -> None:
         self._builder = copy.copy(builder)
         self._leaking_rate = self._builder.leaking_rate
         self._seed = self._builder.seed
@@ -108,8 +113,7 @@ class Reservoir(object):
     def has_input_bias(self) -> bool:
         if hasattr(self, "_bias"):
             return not np.all(self._bias == 0.0)
-        else:
-            return self._builder.bias_scaling != 0.0
+        return self._builder.bias_scaling != 0.0
 
     def has_feedback(self) -> bool:
         return hasattr(self, "_Wfb")
@@ -120,11 +124,17 @@ class Reservoir(object):
 
     @property
     def size(self) -> int:
-        return self._W.shape[0]
+        if self._W.shape is not None:
+            return self._W.shape[0]
+        msg = "Internal weights (W) is not initialized yet"
+        raise ValueError(msg)
 
     @property
     def input_dim(self) -> int:
-        return self.Win.shape[1]
+        if self.Win.shape is not None:
+            return self.Win.shape[1]
+        msg = "Input weights (Win) is not initialized yet"
+        raise ValueError(msg)
 
     @property
     def activation(self) -> Callable[[np.ndarray], np.ndarray]:
@@ -154,7 +164,7 @@ class Reservoir(object):
         self,
         activation: Callable[[np.ndarray], np.ndarray] | None = None,
         fb_activation: Callable[[np.ndarray], np.ndarray] | None = None,
-    ):
+    ) -> None:
         if activation is None:
             activation = self._builder.activation
         if fb_activation is None:
@@ -163,7 +173,7 @@ class Reservoir(object):
         self._activation = activation
         self._fb_activation = fb_activation
 
-    def initialize_forward_type(self, forward_type: str | None = None):
+    def initialize_forward_type(self, forward_type: str | None = None) -> None:
         if forward_type is None:
             forward_type = self._builder.forward_type
 
@@ -172,7 +182,8 @@ class Reservoir(object):
         elif forward_type == "external":
             self._forward_fn = self.forward_external
         else:
-            raise RuntimeError(f"Unknown forward type: {forward_type}")
+            msg = f"Unknown forward type: {forward_type}"
+            raise RuntimeError(msg)
 
     def initialize_noise_generator(
         self,
@@ -181,7 +192,7 @@ class Reservoir(object):
         noise_gain_fb: float | None = None,
         noise_type: str | None = None,
         seed: int | None = None,
-    ):
+    ) -> None:
         if noise_gain_rc is None:
             noise_gain_rc = self._builder.noise_gain_rc
         if noise_gain_in is None:
@@ -253,8 +264,9 @@ class Reservoir(object):
                 connectivity=input_connectivity,
                 sparsity_type="dense",
                 seed=seed,
-            )
+            ),
         )
+        _ = bias  # supress lint error
         return bias
 
     def initialize_input_weights(
@@ -288,11 +300,10 @@ class Reservoir(object):
         # Calculate bias vector.
         self._bias = self._initialize_bias(reservoir_size, input_connectivity, bias_scaling, Win_init, seed)
 
-        # Check if the given input scaling vector has correct number
-        # of elements.
-        if isinstance(input_scaling, Iterable):
-            if len(list(input_scaling)) != input_dim:
-                raise ValueError(f"The size of `input_scaling` is mismatched with `input_dim`.")
+        # Check if the given input scaling vector has correct number of elements.
+        if isinstance(input_scaling, Iterable) and len(list(input_scaling)) != input_dim:
+            msg = "The size of `input_scaling` is mismatched with `input_dim`."
+            raise ValueError(msg)
 
         # Calculate Win matrix.
         self._Win = initialize_weights(
@@ -326,11 +337,10 @@ class Reservoir(object):
         if seed is None:
             seed = self._builder.seed
 
-        # Check if the given feedback scaling vector has correct number
-        # of elements.
-        if isinstance(fb_scaling, Iterable):
-            if len(list(fb_scaling)) != output_dim:
-                raise ValueError(f"The size of `fb_scaling` is mismatched with `output_dim`.")
+        # Check if the given feedback scaling vector has correct of elements.
+        if isinstance(fb_scaling, Iterable) and len(list(fb_scaling)) != output_dim:
+            msg = "The size of `fb_scaling` is mismatched with `output_dim`."
+            raise ValueError(msg)
 
         # Calculate Wfb matrix.
         self._Wfb = initialize_weights(
@@ -391,6 +401,7 @@ class Reservoir(object):
 
     def forward(self, u: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
         if self.has_feedback() and y is None:
-            raise RuntimeError(f"Reservoir has feedback connection, but no feedback signal was given.")
+            msg = "Reservoir has feedback connection, but no feedback signal was given."
+            raise RuntimeError(msg)
 
         return self._forward_fn(u, y)

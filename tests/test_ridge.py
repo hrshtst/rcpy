@@ -1,6 +1,10 @@
+# ruff: noqa: ERA001,PLR2004,SLF001
+from __future__ import annotations
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
+
 from rebasicspy.ridge import Ridge
 
 from ._base import RandDataSet, SmallDataSet, SmallDataSetMO
@@ -12,7 +16,7 @@ def ridge() -> Ridge:
 
 
 class TestRidge:
-    def test_init(self):
+    def test_init(self) -> None:
         ridge = Ridge()
         assert ridge.regularization == 0
         assert hasattr(ridge, "_X") is False
@@ -22,11 +26,11 @@ class TestRidge:
         assert hasattr(ridge, "_sample_weight") is False
 
     @pytest.mark.parametrize("beta", [1e-3, 1, 1e10])
-    def test_init_regularization(self, beta: float):
+    def test_init_regularization(self, beta: float) -> None:
         ridge = Ridge(regularization=beta)
         assert ridge.regularization == beta
 
-    def test_process_backward_check_stacked_matrix_size(self, ridge: Ridge):
+    def test_process_backward_check_stacked_matrix_size(self, ridge: Ridge) -> None:
         n_features = 4
         data = iter(RandDataSet(n_features=n_features))
 
@@ -45,7 +49,7 @@ class TestRidge:
         assert ridge._X.shape == (3, n_features)
         assert ridge._Y.shape == (3, 1)
 
-    def test_process_backward_make_stacked_matrix_float(self, ridge: Ridge):
+    def test_process_backward_make_stacked_matrix_float(self, ridge: Ridge) -> None:
         data = iter(RandDataSet(n_features=4))
         expected_type = np.dtype(float)
 
@@ -64,7 +68,7 @@ class TestRidge:
         assert ridge._X.dtype is expected_type
         assert ridge._Y.dtype is expected_type
 
-    def test_process_backward_check_stacked_matrix(self, ridge: Ridge):
+    def test_process_backward_check_stacked_matrix(self, ridge: Ridge) -> None:
         n_features = 4
         data = iter(RandDataSet(n_features=n_features))
 
@@ -89,7 +93,7 @@ class TestRidge:
         assert_array_equal(X, ridge._X)
         assert_array_equal(Y, ridge._Y)
 
-    def test_process_backward_stack_vectors(self, ridge: Ridge):
+    def test_process_backward_stack_vectors(self, ridge: Ridge) -> None:
         n_features = 4
         n_output = 2
         data = RandDataSet(n_features=n_features, n_output=n_output)
@@ -98,7 +102,7 @@ class TestRidge:
             assert ridge._X.shape == (i + 1, n_features)
             assert ridge._Y.shape == (i + 1, n_output)
 
-    def test_process_backward_batch(self, ridge: Ridge):
+    def test_process_backward_batch(self, ridge: Ridge) -> None:
         n_features = 4
         data = iter(RandDataSet(n_features=n_features))
         ridge.batch_interval = 1
@@ -136,7 +140,7 @@ class TestRidge:
         assert_array_equal(YXT, ridge._YXT)
 
     @pytest.mark.parametrize("interval", [0, 1, 3, 10, 11])
-    def test_fit_parametrize_batch_interval(self, ridge: Ridge, interval: int):
+    def test_fit_parametrize_batch_interval(self, ridge: Ridge, interval: int) -> None:
         n_samples = 10
         n_features = 4
         n_output = 2
@@ -156,7 +160,7 @@ class TestRidge:
         assert_array_almost_equal(XXT, ridge._XXT)
         assert_array_almost_equal(YXT, ridge._YXT)
 
-    def test_process_backward_stack_sample_weight(self, ridge: Ridge):
+    def test_process_backward_stack_sample_weight(self, ridge: Ridge) -> None:
         n_samples = 10
         data = iter(RandDataSet(n_samples=n_samples))
         sample_weight = np.arange(n_samples)
@@ -177,7 +181,7 @@ class TestRidge:
         assert_array_equal(sample_weight[:3], ridge._sample_weight)
 
     @pytest.mark.parametrize("solver", ["pseudoinv", "cholesky"])
-    def test_fit_small_dataset(self, ridge: Ridge, solver: str):
+    def test_fit_small_dataset(self, ridge: Ridge, solver: str) -> None:
         data = SmallDataSet()
         ridge.solver = solver
         for x, y in data:
@@ -187,7 +191,7 @@ class TestRidge:
 
     @pytest.mark.parametrize("solver", ["pseudoinv", "cholesky"])
     @pytest.mark.parametrize("beta", [0.00001, 0.01])
-    def test_fit_small_dataset_with_regularization(self, ridge: Ridge, solver: str, beta: float):
+    def test_fit_small_dataset_with_regularization(self, ridge: Ridge, solver: str, beta: float) -> None:
         data = SmallDataSet()
         ridge.solver = solver
         ridge.regularization = beta
@@ -197,7 +201,7 @@ class TestRidge:
         assert_array_almost_equal(data.coef, ridge.Wout, decimal=2)
 
     @pytest.mark.parametrize("solver", ["pseudoinv", "cholesky"])
-    def test_fit_small_dataset_multi_output(self, ridge: Ridge, solver: str):
+    def test_fit_small_dataset_multi_output(self, ridge: Ridge, solver: str) -> None:
         data = SmallDataSetMO()
         ridge.solver = solver
         for x, y in data:

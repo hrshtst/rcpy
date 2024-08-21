@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 
 import numpy as np
@@ -11,7 +13,7 @@ class RLS(Readout):
     _Wout_init: str
     _P: np.ndarray
 
-    def __init__(self, forgetting_factor: float = 0.98, delta: float = 0.001, Wout_init: str = "zeros"):
+    def __init__(self, forgetting_factor: float = 0.98, delta: float = 0.001, Wout_init: str = "zeros") -> None:
         self.forgetting_factor = forgetting_factor
         self.delta = delta
         self._Wout_init = Wout_init
@@ -35,7 +37,7 @@ class RLS(Readout):
         self._delta = delta
         return self._delta
 
-    def process_backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None):
+    def process_backward(self, x: np.ndarray, y_target: float | np.ndarray, sample_weight: float | None) -> None:
         # Error estimation
         try:
             e = compute_error(self, x, y_target)
@@ -46,7 +48,8 @@ class RLS(Readout):
             self._P = (1.0 / self.delta) * np.identity(len(x))
             # Warning if sample_weight is given
             if sample_weight is not None:
-                warnings.warn("Least-squares method does not support weighted algorithms", UserWarning)
+                msg = "Least-squares method does not support weighted algorithms"
+                warnings.warn(msg, UserWarning, stacklevel=2)
             e = compute_error(self, x, y_target)
 
         # Computation of gain vector
@@ -65,17 +68,17 @@ class RLS(Readout):
         self._Wout += dw
         return super().process_backward(x, y_target, sample_weight)
 
-    def process_backward_batch(self):
+    def process_backward_batch(self) -> None:
         # Do nothing
         return super().process_backward_batch()
 
-    def finalize_backward_batch(self):
+    def finalize_backward_batch(self) -> None:
         # Do nothing
         return super().finalize_backward_batch()
 
-    def finalize(self):
+    def finalize(self) -> None:
         # Do nothing
         pass
 
-    def reset(self):
+    def reset(self) -> None:
         return super().reset()

@@ -1,31 +1,36 @@
+# ruff: noqa: ANN001,ANN002,ANN003
 from __future__ import annotations
 
 import weakref
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class MetaNodeRegistry(type):
-    """Metaclass providing a Node registry and its ID"""
+    """Metaclass providing a Node registry and its ID."""
 
-    def __init__(cls, name, bases, attrs):
+    def __init__(cls, name, bases, attrs) -> None:
         # __init__ creates a class as this is a metaclass.
-        super(MetaNodeRegistry, cls).__init__(name, bases, attrs)
+        super(MetaNodeRegistry, cls).__init__(name, bases, attrs)  # noqa: UP008
         # Initialize instance registry.
-        cls._instances = weakref.WeakSet()
+        cls._instances = weakref.WeakSet()  # type: ignore[var-annotated]
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args, **kwargs):  # noqa: ANN204
         # __call__ creates an instance, namely it calls __init__ and
         # __new__ methods.
-        inst = super(MetaNodeRegistry, cls).__call__(*args, **kwargs)
+        inst = super(MetaNodeRegistry, cls).__call__(*args, **kwargs)  # noqa: UP008
 
         # Store weak reference to instance.
         cls._instances.add(inst)
 
         return inst
 
-    def __iter__(cls):
+    def __iter__(cls) -> Iterator:
         return cls.get_iter(recursive=False)
 
-    def get_instances(cls, recursive=False):
+    def get_instances(cls, *, recursive=False) -> list:
         """Get all Node instaces in the registry.
 
         If recursive=True, search subclasses recursively.
@@ -37,7 +42,7 @@ class MetaNodeRegistry(type):
 
         return list(set(instances))
 
-    def get_id(cls, recursive=False):
+    def get_id(cls, *, recursive=False) -> int:
         """Get an ID for an insntace that is being created now on.
 
         If recursive=True, search subclasses recursively. This method
@@ -46,7 +51,7 @@ class MetaNodeRegistry(type):
         """
         return len(cls.get_instances(recursive=recursive))
 
-    def get_iter(cls, recursive=False):
+    def get_iter(cls, *, recursive=False) -> Iterator:
         """Get an iterator of instances of the class.
 
         If recursive=True, search subclasses recursively.
@@ -54,14 +59,14 @@ class MetaNodeRegistry(type):
         return iter(cls.get_instances(recursive=recursive))
 
 
-class Node(object, metaclass=MetaNodeRegistry):
-    """Base class for reservoir, readout layer, and so on"""
+class Node(metaclass=MetaNodeRegistry):
+    """Base class for reservoir, readout layer, and so on."""
 
     _name: str
     _id: int
     default_name = "node"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._id = self.__class__.get_id()
         self._name = f"{self.__class__.default_name}_{self._id}"
 
@@ -77,8 +82,8 @@ class Node(object, metaclass=MetaNodeRegistry):
         return self._name
 
     @name.setter
-    def name(self, new_name: str):
-        """Set a new name to the instance"""
+    def name(self, new_name: str) -> None:
+        """Set a new name to the instance."""
         self._name = new_name
 
     @property
@@ -95,14 +100,15 @@ class Node(object, metaclass=MetaNodeRegistry):
         for node in cls:
             if node.name == name:
                 return node
+        return None
 
 
-class Model(object):
+class Model:
     """Model class consisted in multiple nodes."""
 
     graph: dict[Node, list[Node]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.graph = {}
 
     def add(self, node: Node) -> Model:
@@ -115,6 +121,6 @@ class Model(object):
         self.add(from_node)
         self.add(to_node)
         edges = self.graph[from_node]
-        if not to_node in edges:
+        if to_node not in edges:
             edges.append(to_node)
         return self

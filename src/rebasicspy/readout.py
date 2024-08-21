@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import numpy as np
+
+from rebasicspy.random import get_rng
 
 _ERR_MSG_READOUT_OPT_NOT_STARTED = "Optimization of readout layer has not started yet."
 
 
-class Readout(object):
+class Readout:
     _Wout: np.ndarray
     _batch_interval: int
     _batch_count: int
     _batch_processed: bool
     _batch_finalized: bool
 
-    def __init__(self, batch_interval: int | None = None):
-        self.batch_interval = batch_interval
+    def __init__(self, batch_interval: int | None = None) -> None:
+        self.batch_interval = batch_interval  # type: ignore[assignment]
         self.reset()
 
     @property
@@ -19,7 +23,7 @@ class Readout(object):
         return self._batch_interval
 
     @batch_interval.setter
-    def batch_interval(self, val: int | None):
+    def batch_interval(self, val: int | None) -> None:
         if val is None:
             self._batch_interval = 0
         else:
@@ -37,7 +41,7 @@ class Readout(object):
             raise RuntimeError(_ERR_MSG_READOUT_OPT_NOT_STARTED)
         return self._Wout
 
-    def backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None = None):
+    def backward(self, x: np.ndarray, y_target: float | np.ndarray, sample_weight: float | None = None) -> None:
         self._batch_count += 1
         self._batch_processed = False
         self._batch_finalized = False
@@ -45,30 +49,34 @@ class Readout(object):
         if self._batch_count == self.batch_interval:
             self.process_backward_batch()
 
-    def process_backward(self, x: np.ndarray, y_target: float | int | np.ndarray, sample_weight: float | int | None):
-        _ = x, y_target, sample_weight
+    def process_backward(self, x: np.ndarray, y_target: float | np.ndarray, sample_weight: float | None) -> None:
+        _ = (
+            x,
+            y_target,
+            sample_weight,
+        )
 
-    def process_backward_batch(self):
+    def process_backward_batch(self) -> None:
         self._batch_count = 0
         self._batch_processed = True
 
-    def finalize_backward_batch(self):
+    def finalize_backward_batch(self) -> None:
         self._batch_count = 0
         self._batch_processed = True
         self._batch_finalized = True
 
-    def reset(self):
+    def reset(self) -> None:
         self._batch_count = 0
         self._batch_processed = False
         self._batch_finalized = False
         if hasattr(self, "_Wout"):
             del self._Wout
 
-    def finalize(self):
+    def finalize(self) -> None:
         # Finalize Wout here in derived class
         raise NotImplementedError
 
-    def fit(self):
+    def fit(self) -> None:
         if self.has_nothing_to_process():
             raise RuntimeError(_ERR_MSG_READOUT_OPT_NOT_STARTED)
 
@@ -82,7 +90,9 @@ class Readout(object):
 
 
 def rescale_data(
-    X: np.ndarray, y: float | int | np.ndarray, sample_weight: float | int | np.ndarray | None
+    X: np.ndarray,
+    y: float | np.ndarray,
+    sample_weight: float | np.ndarray | None,
 ) -> tuple[np.ndarray, np.ndarray]:
     if sample_weight is None:
         return X, np.atleast_1d(y)
@@ -98,19 +108,18 @@ def rescale_data(
         y = y * sample_weight_sqrt
     else:
         y = y * sample_weight_sqrt[:, np.newaxis]
-    return X, y
+    return X, y  # type: ignore[return-value]
 
 
 def initialize_weights(shape: tuple[int, ...], initializer: str = "zeros") -> np.ndarray:
     if initializer == "random":
-        return np.random.normal(0.0, 0.5, size=shape)
-    elif initializer == "zeros":
+        return get_rng().normal(0.0, 0.5, size=shape)
+    if initializer == "zeros":
         return np.zeros(shape, dtype=float)
-    else:
-        raise ValueError(f"Unknown initializer: {initializer}")
+    msg = f"Unknown initializer: {initializer}"
+    raise ValueError(msg)
 
 
-def compute_error(readout: Readout, x: np.ndarray, y_target: float | int | np.ndarray) -> np.ndarray:
+def compute_error(readout: Readout, x: np.ndarray, y_target: float | np.ndarray) -> np.ndarray:
     y = readout.predict(x)
-    err = y_target - y
-    return err
+    return y_target - y  # return error

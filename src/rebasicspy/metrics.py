@@ -1,11 +1,16 @@
-from typing import Iterable, Literal, overload
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, overload
 
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse.linalg as spla
 from scipy.sparse import issparse
 
-from rebasicspy._type import WeightsType
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from rebasicspy._type import WeightsType
 
 
 @overload
@@ -14,8 +19,7 @@ def mean_squared_error(
     y_target: Iterable[float | Iterable[float]],
     root: bool = False,
     raw_values: Literal[False] = ...,
-) -> float:
-    ...
+) -> float: ...
 
 
 @overload
@@ -24,8 +28,7 @@ def mean_squared_error(
     y_target: Iterable[float | Iterable[float]],
     root: bool = False,
     raw_values: Literal[True] = ...,
-) -> np.ndarray:
-    ...
+) -> np.ndarray: ...
 
 
 def mean_squared_error(
@@ -35,7 +38,6 @@ def mean_squared_error(
     raw_values: bool = False,
 ) -> float | np.ndarray:
     """Mean squared error."""
-
     y = np.asarray(y, dtype=float)
     y_target = np.asarray(y_target, dtype=float)
     errors = np.average((y - y_target) ** 2, axis=0)
@@ -48,7 +50,7 @@ def mean_squared_error(
 
 def spectral_radius(weights: WeightsType, maxiter: int | None = None) -> float:
     if issparse(weights):
-        if maxiter is None:
+        if maxiter is None and weights.shape is not None:
             maxiter = weights.shape[0] * 20
         eigvals = spla.eigs(weights, k=1, which="LM", maxiter=maxiter, return_eigenvectors=False)
     else:

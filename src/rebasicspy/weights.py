@@ -1,14 +1,23 @@
-from typing import Callable, Iterable, Literal, overload
+# ruff: noqa: ANN003
+from __future__ import annotations
+
+import warnings
+from typing import TYPE_CHECKING, Literal, overload
 
 import numpy as np
-from numpy.random import Generator
 from scipy import sparse
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, diags
 from scipy.sparse.linalg import ArpackNoConvergence
 
-from rebasicspy._type import SparsityType, WeightsType
 from rebasicspy.metrics import spectral_radius
 from rebasicspy.random import get_rng, get_rvs
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from numpy.random import Generator
+
+    from rebasicspy._type import SparsityType, WeightsType
 
 _epsilon = 1e-8  # avoid division by zero when rescaling spectral radius
 
@@ -21,8 +30,7 @@ def sparse_random(
     sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
-) -> np.ndarray:
-    ...
+) -> np.ndarray: ...
 
 
 @overload
@@ -33,8 +41,7 @@ def sparse_random(
     sparsity_type: Literal["csr"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
-) -> csr_matrix:
-    ...
+) -> csr_matrix: ...
 
 
 @overload
@@ -45,8 +52,7 @@ def sparse_random(
     sparsity_type: Literal["csc"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
-) -> csc_matrix:
-    ...
+) -> csc_matrix: ...
 
 
 @overload
@@ -57,8 +63,7 @@ def sparse_random(
     sparsity_type: Literal["coo"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
-) -> coo_matrix:
-    ...
+) -> coo_matrix: ...
 
 
 def sparse_random(
@@ -72,7 +77,8 @@ def sparse_random(
     if connectivity is None:
         connectivity = 1.0
     elif connectivity < 0 or connectivity > 1:
-        raise ValueError(f"`connectivity` expected to be 0 <= connectivity <= 1.")
+        msg = "`connectivity` expected to be 0 <= connectivity <= 1."
+        raise ValueError(msg)
 
     rng = get_rng(seed)
     rvs = get_rvs(rng, dist=distribution, **kwargs)
@@ -99,8 +105,7 @@ def uniform(
     connectivity: float | None = ...,
     sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
-) -> np.ndarray:
-    ...
+) -> np.ndarray: ...
 
 
 @overload
@@ -111,8 +116,7 @@ def uniform(
     connectivity: float | None = ...,
     sparsity_type: Literal["csr", "csc", "coo"] = ...,
     seed: int | Generator | None = ...,
-) -> csr_matrix | csc_matrix | coo_matrix:
-    ...
+) -> csr_matrix | csc_matrix | coo_matrix: ...
 
 
 def uniform(
@@ -124,7 +128,8 @@ def uniform(
     seed: int | Generator | None = None,
 ) -> WeightsType:
     if low > high:
-        raise ValueError(f"`high` boundary expected to be bigger than `low` boundary.")
+        msg = "`high` boundary expected to be bigger than `low` boundary."
+        raise ValueError(msg)
     return sparse_random(
         shape,
         distribution="uniform",
@@ -144,8 +149,7 @@ def normal(
     connectivity: float | None = ...,
     sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
-) -> np.ndarray:
-    ...
+) -> np.ndarray: ...
 
 
 @overload
@@ -156,8 +160,7 @@ def normal(
     connectivity: float | None = ...,
     sparsity_type: Literal["csr", "csc", "coo"] = ...,
     seed: int | Generator | None = ...,
-) -> csr_matrix | csc_matrix | coo_matrix:
-    ...
+) -> csr_matrix | csc_matrix | coo_matrix: ...
 
 
 def normal(
@@ -186,8 +189,7 @@ def bernoulli(
     connectivity: float | None = ...,
     sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
-) -> np.ndarray:
-    ...
+) -> np.ndarray: ...
 
 
 @overload
@@ -197,8 +199,7 @@ def bernoulli(
     connectivity: float | None = ...,
     sparsity_type: Literal["csr", "csc", "coo"] = ...,
     seed: int | Generator | None = ...,
-) -> csr_matrix | csc_matrix | coo_matrix:
-    ...
+) -> csr_matrix | csc_matrix | coo_matrix: ...
 
 
 def bernoulli(
@@ -208,8 +209,9 @@ def bernoulli(
     sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
 ) -> WeightsType:
-    if 1 < p or p < 0:
-        raise ValueError("'p' must be <= 1 and >= 0.")
+    if p > 1 or p < 0:
+        msg = "'p' must be <= 1 and >= 0."
+        raise ValueError(msg)
     return sparse_random(
         shape,
         distribution="custom_bernoulli",
@@ -238,8 +240,7 @@ def initialize_weights(
     scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["dense"] = ...,
     **kwargs,
-) -> np.ndarray:
-    ...
+) -> np.ndarray: ...
 
 
 @overload
@@ -250,8 +251,7 @@ def initialize_weights(
     scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["csr"] = ...,
     **kwargs,
-) -> csr_matrix:
-    ...
+) -> csr_matrix: ...
 
 
 @overload
@@ -262,8 +262,7 @@ def initialize_weights(
     scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["csc"] = ...,
     **kwargs,
-) -> csc_matrix:
-    ...
+) -> csc_matrix: ...
 
 
 @overload
@@ -274,8 +273,7 @@ def initialize_weights(
     scaling: float | Iterable[float] | None = ...,
     sparsity_type: Literal["coo"] = ...,
     **kwargs,
-) -> coo_matrix:
-    ...
+) -> coo_matrix: ...
 
 
 def initialize_weights(
@@ -294,11 +292,13 @@ def initialize_weights(
                 w = _scale_spectral_radius(w, spectral_radius)
             if scaling is not None:
                 w = _scale_inputs(w, scaling)
-            return w
         except ArpackNoConvergence:
             iteration -= 1
-            # print(f"Re-sampling initial weights")
-    raise RuntimeError("No convergence: did not find any eigenvalues to sufficient accuracy.")
+            warnings.warn("Re-sampling initial weights", stacklevel=2)
+        else:
+            return w
+    msg = "No convergence: did not find any eigenvalues to sufficient accuracy."
+    raise RuntimeError(msg)
 
 
 def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
@@ -309,10 +309,10 @@ def _scale_spectral_radius(weights: WeightsType, sr: float) -> WeightsType:
     return weights
 
 
-def _scale_inputs(weights: WeightsType, scaling: float | int | Iterable[float]) -> WeightsType:
+def _scale_inputs(weights: WeightsType, scaling: float | Iterable[float]) -> WeightsType:
     if isinstance(scaling, float | int):
         return weights * scaling
-    elif len(list(scaling)) == weights.shape[1]:
+    if weights.shape is not None and len(list(scaling)) == weights.shape[1]:
         return weights * diags(scaling)
-    else:
-        raise ValueError(f"The size of `scaling` is mismatched with `weights`.")
+    msg = "The size of `scaling` is mismatched with `weights`."
+    raise ValueError(msg)
