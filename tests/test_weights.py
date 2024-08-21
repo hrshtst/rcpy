@@ -160,7 +160,9 @@ def test_initialize_weights_scale_spectral_radius(
     sparsity_type: Literal["csr", "csc", "coo"],
     expected_type: Any,
 ) -> None:
-    w = initialize_weights((100, 100), uniform, spectral_radius=sr, sparsity_type=sparsity_type)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        w = initialize_weights((100, 100), uniform, spectral_radius=sr, sparsity_type=sparsity_type)
     arr = w.toarray()
     actual = max(abs(np.linalg.eigvals(arr)))
     assert isinstance(w, expected_type)
