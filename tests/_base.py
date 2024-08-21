@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
 
 def gen_rng(seed: int = 0) -> np.random.RandomState:
@@ -17,9 +17,8 @@ class DataSetBase:
     X: Iterable
     Y: Iterable
 
-    def __iter__(self):
-        for x, y in zip(self.X, self.Y, strict=False):
-            yield x, y
+    def __iter__(self) -> Iterator:
+        yield from zip(self.X, self.Y, strict=False)
 
 
 class RandDataSet(DataSetBase):
