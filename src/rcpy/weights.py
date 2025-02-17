@@ -25,9 +25,9 @@ _epsilon = 1e-8  # avoid division by zero when rescaling spectral radius
 @overload
 def sparse_random(
     shape: tuple[int, ...],
+    sparsity_type: Literal["dense"] = ...,
     distribution: str = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
 ) -> np.ndarray: ...
@@ -36,9 +36,9 @@ def sparse_random(
 @overload
 def sparse_random(
     shape: tuple[int, ...],
+    sparsity_type: Literal["csr"],
     distribution: str = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["csr"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
 ) -> csr_matrix: ...
@@ -47,9 +47,9 @@ def sparse_random(
 @overload
 def sparse_random(
     shape: tuple[int, ...],
+    sparsity_type: Literal["csc"],
     distribution: str = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["csc"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
 ) -> csc_matrix: ...
@@ -58,19 +58,30 @@ def sparse_random(
 @overload
 def sparse_random(
     shape: tuple[int, ...],
+    sparsity_type: Literal["coo"],
     distribution: str = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["coo"] = ...,
     seed: int | Generator | None = ...,
     **kwargs,
 ) -> coo_matrix: ...
 
 
+@overload
 def sparse_random(
     shape: tuple[int, ...],
+    sparsity_type: SparsityType = ...,
+    distribution: str = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+    **kwargs,
+) -> WeightsType: ...
+
+
+def sparse_random(
+    shape: tuple[int, ...],
+    sparsity_type: SparsityType = "dense",
     distribution: str = "uniform",
     connectivity: float | None = None,
-    sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
     **kwargs,
 ) -> WeightsType:
@@ -87,7 +98,7 @@ def sparse_random(
         shape[1],
         density=connectivity,
         format=sparsity_type,
-        random_state=rng,
+        rng=rng,
         data_rvs=rvs,
         dtype=float,
     )
@@ -100,10 +111,10 @@ def sparse_random(
 @overload
 def uniform(
     shape: tuple[int, ...],
+    sparsity_type: Literal["dense"] = ...,
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
 ) -> np.ndarray: ...
 
@@ -111,20 +122,53 @@ def uniform(
 @overload
 def uniform(
     shape: tuple[int, ...],
+    sparsity_type: Literal["csr"],
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["csr", "csc", "coo"] = ...,
     seed: int | Generator | None = ...,
-) -> csr_matrix | csc_matrix | coo_matrix: ...
+) -> csr_matrix: ...
+
+
+@overload
+def uniform(
+    shape: tuple[int, ...],
+    sparsity_type: Literal["csc"],
+    low: float = ...,
+    high: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> csc_matrix: ...
+
+
+@overload
+def uniform(
+    shape: tuple[int, ...],
+    sparsity_type: Literal["coo"],
+    low: float = ...,
+    high: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> coo_matrix: ...
+
+
+@overload
+def uniform(
+    shape: tuple[int, ...],
+    sparsity_type: SparsityType = ...,
+    low: float = ...,
+    high: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> WeightsType: ...
 
 
 def uniform(
     shape: tuple[int, ...],
+    sparsity_type: SparsityType = "dense",
     low: float = -1.0,
     high: float = 1.0,
     connectivity: float | None = None,
-    sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
 ) -> WeightsType:
     if low > high:
@@ -144,10 +188,10 @@ def uniform(
 @overload
 def normal(
     shape: tuple[int, ...],
+    sparsity_type: Literal["dense"] = ...,
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
 ) -> np.ndarray: ...
 
@@ -155,20 +199,53 @@ def normal(
 @overload
 def normal(
     shape: tuple[int, ...],
+    sparsity_type: Literal["csr"],
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["csr", "csc", "coo"] = ...,
     seed: int | Generator | None = ...,
-) -> csr_matrix | csc_matrix | coo_matrix: ...
+) -> csr_matrix: ...
+
+
+@overload
+def normal(
+    shape: tuple[int, ...],
+    sparsity_type: Literal["csc"],
+    loc: float = ...,
+    scale: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> csc_matrix: ...
+
+
+@overload
+def normal(
+    shape: tuple[int, ...],
+    sparsity_type: Literal["coo"],
+    loc: float = ...,
+    scale: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> coo_matrix: ...
+
+
+@overload
+def normal(
+    shape: tuple[int, ...],
+    sparsity_type: SparsityType = ...,
+    loc: float = ...,
+    scale: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> WeightsType: ...
 
 
 def normal(
     shape: tuple[int, ...],
+    sparsity_type: SparsityType = "dense",
     loc: float = 0.0,
     scale: float = 1.0,
     connectivity: float | None = None,
-    sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
 ) -> WeightsType:
     return sparse_random(
@@ -185,9 +262,9 @@ def normal(
 @overload
 def bernoulli(
     shape: tuple[int, ...],
+    sparsity_type: Literal["dense"] = ...,
     p: float = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["dense"] = ...,
     seed: int | Generator | None = ...,
 ) -> np.ndarray: ...
 
@@ -195,18 +272,48 @@ def bernoulli(
 @overload
 def bernoulli(
     shape: tuple[int, ...],
+    sparsity_type: Literal["csr"],
     p: float = ...,
     connectivity: float | None = ...,
-    sparsity_type: Literal["csr", "csc", "coo"] = ...,
     seed: int | Generator | None = ...,
-) -> csr_matrix | csc_matrix | coo_matrix: ...
+) -> csr_matrix: ...
+
+
+@overload
+def bernoulli(
+    shape: tuple[int, ...],
+    sparsity_type: Literal["csc"],
+    p: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> csc_matrix: ...
+
+
+@overload
+def bernoulli(
+    shape: tuple[int, ...],
+    sparsity_type: Literal["coo"],
+    p: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> coo_matrix: ...
+
+
+@overload
+def bernoulli(
+    shape: tuple[int, ...],
+    sparsity_type: SparsityType = ...,
+    p: float = ...,
+    connectivity: float | None = ...,
+    seed: int | Generator | None = ...,
+) -> WeightsType: ...
 
 
 def bernoulli(
     shape: tuple[int, ...],
+    sparsity_type: SparsityType = "dense",
     p: float = 0.5,
     connectivity: float | None = None,
-    sparsity_type: SparsityType = "dense",
     seed: int | Generator | None = None,
 ) -> WeightsType:
     if p > 1 or p < 0:
@@ -236,9 +343,9 @@ def zeros(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:
 def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
+    sparsity_type: Literal["dense"] = ...,
     spectral_radius: float | None = ...,
     scaling: float | Iterable[float] | None = ...,
-    sparsity_type: Literal["dense"] = ...,
     **kwargs,
 ) -> np.ndarray: ...
 
@@ -247,9 +354,9 @@ def initialize_weights(
 def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
+    sparsity_type: Literal["csr"],
     spectral_radius: float | None = ...,
     scaling: float | Iterable[float] | None = ...,
-    sparsity_type: Literal["csr"] = ...,
     **kwargs,
 ) -> csr_matrix: ...
 
@@ -258,9 +365,9 @@ def initialize_weights(
 def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
+    sparsity_type: Literal["csc"],
     spectral_radius: float | None = ...,
     scaling: float | Iterable[float] | None = ...,
-    sparsity_type: Literal["csc"] = ...,
     **kwargs,
 ) -> csc_matrix: ...
 
@@ -269,9 +376,9 @@ def initialize_weights(
 def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
+    sparsity_type: Literal["coo"],
     spectral_radius: float | None = ...,
     scaling: float | Iterable[float] | None = ...,
-    sparsity_type: Literal["coo"] = ...,
     **kwargs,
 ) -> coo_matrix: ...
 
@@ -279,9 +386,9 @@ def initialize_weights(
 def initialize_weights(
     shape: tuple[int, ...],
     w_initializer: Callable[..., WeightsType],
+    sparsity_type: SparsityType = "dense",
     spectral_radius: float | None = None,
     scaling: float | Iterable[float] | None = None,
-    sparsity_type: SparsityType = "dense",
     **kwargs,
 ) -> WeightsType:
     iteration = 10

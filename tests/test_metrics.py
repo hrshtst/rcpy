@@ -17,7 +17,9 @@ from rcpy.metrics import mean_squared_error, spectral_radius
     ],
 )
 def test_mean_squared_error_calculate_correctly_with_one_dimension(
-    y: list[float], y_target: list[float], expected: float,
+    y: list[float],
+    y_target: list[float],
+    expected: float,
 ) -> None:
     assert mean_squared_error(y, y_target) == expected
 
@@ -31,7 +33,9 @@ def test_mean_squared_error_calculate_correctly_with_one_dimension(
     ],
 )
 def test_mean_squared_error_calculate_rooted_mse_with_one_dimension(
-    y: list[float], y_target: list[float], expected: float,
+    y: list[float],
+    y_target: list[float],
+    expected: float,
 ) -> None:
     assert mean_squared_error(y, y_target, root=True) == pytest.approx(expected)
 
@@ -45,7 +49,9 @@ def test_mean_squared_error_calculate_rooted_mse_with_one_dimension(
     ],
 )
 def test_mean_squared_error_calculate_correctly_with_one_dimensional_numpy_array(
-    y: list[float], y_target: list[float], expected: float,
+    y: list[float],
+    y_target: list[float],
+    expected: float,
 ) -> None:
     assert mean_squared_error(np.array(y), np.array(y_target)) == expected
 
@@ -59,7 +65,9 @@ def test_mean_squared_error_calculate_correctly_with_one_dimensional_numpy_array
     ],
 )
 def test_mean_squared_error_calculate_rooted_mse_with_one_dimensional_numpy_array(
-    y: list[float], y_target: list[float], expected: float,
+    y: list[float],
+    y_target: list[float],
+    expected: float,
 ) -> None:
     assert mean_squared_error(np.array(y), np.array(y_target), root=True) == pytest.approx(expected)
 
@@ -71,7 +79,9 @@ def test_mean_squared_error_calculate_rooted_mse_with_one_dimensional_numpy_arra
     ],
 )
 def test_mean_squared_error_calculate_with_two_dimensions(
-    y: list[list[float]], y_target: list[list[float]], expected: float,
+    y: list[list[float]],
+    y_target: list[list[float]],
+    expected: float,
 ) -> None:
     output: float = mean_squared_error(y, y_target)
     assert output == pytest.approx(expected)
@@ -84,7 +94,9 @@ def test_mean_squared_error_calculate_with_two_dimensions(
     ],
 )
 def test_mean_squared_error_calculate_raw_values_with_two_dimensions(
-    y: list[list[float]], y_target: list[list[float]], expected: list[float],
+    y: list[list[float]],
+    y_target: list[list[float]],
+    expected: list[float],
 ) -> None:
     output: np.ndarray = mean_squared_error(y, y_target, raw_values=True)
     assert_almost_equal(output, expected)
@@ -97,7 +109,9 @@ def test_mean_squared_error_calculate_raw_values_with_two_dimensions(
     ],
 )
 def test_mean_squared_error_calculate_rooted_mse_with_two_dimensions(
-    y: list[float], y_target: list[float], expected: float,
+    y: list[float],
+    y_target: list[float],
+    expected: float,
 ) -> None:
     output: float = mean_squared_error(y, y_target, root=True)
     assert output == pytest.approx(expected)
@@ -110,7 +124,9 @@ def test_mean_squared_error_calculate_rooted_mse_with_two_dimensions(
     ],
 )
 def test_mean_squared_error_calculate_raw_values_of_rooted_mse_with_two_dimensions(
-    y: list[float], y_target: list[float], expected: list[float],
+    y: list[float],
+    y_target: list[float],
+    expected: list[float],
 ) -> None:
     output: np.ndarray = mean_squared_error(y, y_target, root=True, raw_values=True)
     assert_almost_equal(output, expected)

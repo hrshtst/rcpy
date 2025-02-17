@@ -29,8 +29,18 @@ def mean_squared_error(
     y_target: Iterable[float | Iterable[float]],
     *,
     root: bool = False,
-    raw_values: Literal[True] = ...,
+    raw_values: Literal[True],
 ) -> np.ndarray: ...
+
+
+@overload
+def mean_squared_error(
+    y: Iterable[float | Iterable[float]],
+    y_target: Iterable[float | Iterable[float]],
+    *,
+    root: bool = ...,
+    raw_values: bool = ...,
+) -> float | np.ndarray: ...
 
 
 def mean_squared_error(
