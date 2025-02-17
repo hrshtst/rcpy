@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rcpy"
 dynamic = ["version"]
-description = "A simple implementation of reBASICS in Python"
+description = "A simple implementation of reservoir computing in Python"
 authors = [
     {name = "Hiroshi Atsuta", email = "atsuta@ieee.org"},
 ]
@@ -187,5 +187,5 @@ module = [
 ignore_missing_imports = true
 
 # Local Variables:
-# jinx-local-words: "McCabe Pyflakes addopts backend bzr cov defs dev direnv doctests hatchling hg ini ipynb isort md mixedCase mypy nox numpy pycache pycodestyle pydocstyle pyenv pypackages pyright pytest pytype ra reBASICS reStructuredText rcpy rgx scipy src svn testpaths tomli tox unfixable untyped urls vcs venv venvPath vscode xdist zA"
+# jinx-local-words: "McCabe Pyflakes addopts backend bzr cov defs dev direnv doctests hatchling hg ini ipynb isort md mixedCase mypy nox numpy pycache pycodestyle pydocstyle pyenv pypackages pyright pytest pytype ra reStructuredText rcpy rgx scipy src svn testpaths tomli tox unfixable untyped urls vcs venv venvPath vscode xdist zA"
 # End:

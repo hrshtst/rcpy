@@ -1,2 +1,2 @@
 # rcpy
-A simple implementation of reBASICS in Python.
+A simple implementation of reservoir computing in Python.
