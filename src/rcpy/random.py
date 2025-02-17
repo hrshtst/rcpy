@@ -1,4 +1,4 @@
-# ruff: noqa: ANN003
+# ruff: noqa: ANN003, A005
 from __future__ import annotations
 
 from functools import partial

@@ -1,49 +1,35 @@
+# ruff: noqa: D100
 from __future__ import annotations
-
-import os
-from pathlib import Path
 
 import nox
 
-nox.needs_version = ">=2024.4.15"
+nox.needs_version = ">=2024.10.9"
 nox.options.default_venv_backend = "uv|virtualenv"
-nox.options.sessions = ["fetch", "tests", "lint"]
+nox.options.reuse_existing_virtualenvs = True
+nox.options.sessions = ["lint", "tests"]
 
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12"]
+PYPROJECT = nox.project.load_toml("pyproject.toml")
 
-
-# https://gist.github.com/MtkN1/41f36491dbf7162043d89d73a9d87dec
-def ensurepath() -> None:
-    rye_home = os.getenv("RYE_HOME")
-    rye_py = Path(rye_home) if rye_home else Path.home() / ".rye" / "py"
-
-    for py_dir in rye_py.iterdir():
-        bin_dir = py_dir / "bin"
-        os.environ["PATH"] = f"{bin_dir}:{os.environ['PATH']}"
+ALL_PYTHONS = [
+    c.split()[-1] for c in PYPROJECT["project"]["classifiers"] if c.startswith("Programming Language :: Python :: 3.")
+]
 
 
-@nox.session()
-def fetch(session: nox.Session) -> None:
-    for require_version in PYTHON_VERSIONS:
-        session.run("rye", "fetch", require_version, external=True)
-    ensurepath()
-
-
-@nox.session(reuse_venv=True)
+@nox.session(python="3.12", reuse_venv=True)
 def lint(session: nox.Session) -> None:
-    session.install("-r", "requirements-dev.lock")
+    """Run ruff linting."""
+    session.install("ruff")
     session.run("ruff", "check", *session.posargs)
 
 
-@nox.session(
-    python=PYTHON_VERSIONS,
-    reuse_venv=True,
-)
+@nox.session(python=ALL_PYTHONS, reuse_venv=True)
 def tests(session: nox.Session) -> None:
-    session.install("-r", "requirements-dev.lock")
+    """Run test suite with pytest."""
+    session.install(*PYPROJECT["dependency-groups"]["dev"], "uv")
+    session.install("-e.")
     session.run("pytest", *session.posargs)
 
 
 # Local Variables:
-# jinx-local-words: "dev py pytest uv virtualenv"
+# jinx-local-words: "dev noqa pyproject pytest uv virtualenv"
 # End:
