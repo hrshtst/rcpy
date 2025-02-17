@@ -8,6 +8,8 @@ import numpy as np
 from numpy.random import Generator, default_rng
 from scipy import stats
 
+from rcpy._type import SeedType, no_default
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -31,12 +33,12 @@ def get_seed() -> int | None:
     return __SEED
 
 
-def get_rng(seed: int | Generator | None = None) -> Generator:
-    if seed is None:
+def get_rng(seed: SeedType = no_default) -> Generator:
+    if seed is no_default:
         return __GLOBAL_RNG
     if isinstance(seed, Generator):
         return seed
-    if isinstance(seed, int):
+    if isinstance(seed, int | None):
         return default_rng(seed)
     msg = f"`seed` is expected to be an `int` or `None`, not {type(seed)}"
     raise TypeError(msg)
@@ -45,7 +47,7 @@ def get_rng(seed: int | Generator | None = None) -> Generator:
 def _bernoulli_discrete_rvs(
     p: float = 0.5,
     value: float = 1.0,
-    random_state: int | Generator | None = None,
+    random_state: SeedType = no_default,
 ) -> Callable:
     rng = get_rng(random_state)
 
@@ -55,7 +57,7 @@ def _bernoulli_discrete_rvs(
     return rvs
 
 
-def get_rvs(rng: int | Generator | None, dist: str, **kwargs) -> Callable:
+def get_rvs(rng: SeedType, dist: str, **kwargs) -> Callable:
     if dist == "custom_bernoulli":
         return _bernoulli_discrete_rvs(**kwargs, random_state=rng)
     if dist in dir(stats):

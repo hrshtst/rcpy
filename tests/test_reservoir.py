@@ -8,6 +8,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from scipy.sparse import csc_matrix, csr_matrix
 
+from rcpy._type import no_default
 from rcpy.activations import identity, relu, sigmoid, softmax, tanh
 from rcpy.random import get_rng
 from rcpy.reservoir import Reservoir, ReservoirBuilder
@@ -87,7 +88,7 @@ class TestReservoir:
         assert default_reservoir.leaking_rate == 0.98
 
     def test_init_seed(self, default_reservoir: Reservoir) -> None:
-        assert default_reservoir._seed is None
+        assert default_reservoir._seed is no_default
 
     def test_has_bias_input(self, default_reservoir: Reservoir) -> None:
         assert default_reservoir.has_input_bias()

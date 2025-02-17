@@ -9,13 +9,12 @@ from scipy import sparse
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, diags
 from scipy.sparse.linalg import ArpackNoConvergence
 
+from rcpy._type import SeedType, no_default
 from rcpy.metrics import spectral_radius
 from rcpy.random import get_rng, get_rvs
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-
-    from numpy.random import Generator
 
     from rcpy._type import SparsityType, WeightsType
 
@@ -28,7 +27,7 @@ def sparse_random(
     sparsity_type: Literal["dense"] = ...,
     distribution: str = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
     **kwargs,
 ) -> np.ndarray: ...
 
@@ -39,7 +38,7 @@ def sparse_random(
     sparsity_type: Literal["csr"],
     distribution: str = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
     **kwargs,
 ) -> csr_matrix: ...
 
@@ -50,7 +49,7 @@ def sparse_random(
     sparsity_type: Literal["csc"],
     distribution: str = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
     **kwargs,
 ) -> csc_matrix: ...
 
@@ -61,7 +60,7 @@ def sparse_random(
     sparsity_type: Literal["coo"],
     distribution: str = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
     **kwargs,
 ) -> coo_matrix: ...
 
@@ -72,7 +71,7 @@ def sparse_random(
     sparsity_type: SparsityType = ...,
     distribution: str = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
     **kwargs,
 ) -> WeightsType: ...
 
@@ -82,7 +81,7 @@ def sparse_random(
     sparsity_type: SparsityType = "dense",
     distribution: str = "uniform",
     connectivity: float | None = None,
-    seed: int | Generator | None = None,
+    seed: SeedType = no_default,
     **kwargs,
 ) -> WeightsType:
     if connectivity is None:
@@ -115,7 +114,7 @@ def uniform(
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> np.ndarray: ...
 
 
@@ -126,7 +125,7 @@ def uniform(
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> csr_matrix: ...
 
 
@@ -137,7 +136,7 @@ def uniform(
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> csc_matrix: ...
 
 
@@ -148,7 +147,7 @@ def uniform(
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> coo_matrix: ...
 
 
@@ -159,7 +158,7 @@ def uniform(
     low: float = ...,
     high: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> WeightsType: ...
 
 
@@ -169,7 +168,7 @@ def uniform(
     low: float = -1.0,
     high: float = 1.0,
     connectivity: float | None = None,
-    seed: int | Generator | None = None,
+    seed: SeedType = no_default,
 ) -> WeightsType:
     if low > high:
         msg = "`high` boundary expected to be bigger than `low` boundary."
@@ -192,7 +191,7 @@ def normal(
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> np.ndarray: ...
 
 
@@ -203,7 +202,7 @@ def normal(
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> csr_matrix: ...
 
 
@@ -214,7 +213,7 @@ def normal(
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> csc_matrix: ...
 
 
@@ -225,7 +224,7 @@ def normal(
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> coo_matrix: ...
 
 
@@ -236,7 +235,7 @@ def normal(
     loc: float = ...,
     scale: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> WeightsType: ...
 
 
@@ -246,7 +245,7 @@ def normal(
     loc: float = 0.0,
     scale: float = 1.0,
     connectivity: float | None = None,
-    seed: int | Generator | None = None,
+    seed: SeedType = no_default,
 ) -> WeightsType:
     return sparse_random(
         shape,
@@ -265,7 +264,7 @@ def bernoulli(
     sparsity_type: Literal["dense"] = ...,
     p: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> np.ndarray: ...
 
 
@@ -275,7 +274,7 @@ def bernoulli(
     sparsity_type: Literal["csr"],
     p: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> csr_matrix: ...
 
 
@@ -285,7 +284,7 @@ def bernoulli(
     sparsity_type: Literal["csc"],
     p: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> csc_matrix: ...
 
 
@@ -295,7 +294,7 @@ def bernoulli(
     sparsity_type: Literal["coo"],
     p: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> coo_matrix: ...
 
 
@@ -305,7 +304,7 @@ def bernoulli(
     sparsity_type: SparsityType = ...,
     p: float = ...,
     connectivity: float | None = ...,
-    seed: int | Generator | None = ...,
+    seed: SeedType = ...,
 ) -> WeightsType: ...
 
 
@@ -314,7 +313,7 @@ def bernoulli(
     sparsity_type: SparsityType = "dense",
     p: float = 0.5,
     connectivity: float | None = None,
-    seed: int | Generator | None = None,
+    seed: SeedType = no_default,
 ) -> WeightsType:
     if p > 1 or p < 0:
         msg = "'p' must be <= 1 and >= 0."

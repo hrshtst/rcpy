@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from numpy.random import default_rng
 
+from rcpy._type import no_default
 from rcpy.random import get_rng, get_rvs, get_seed, noise, set_seed
 
 
@@ -21,16 +22,16 @@ def test_set_seed_raise_exception_when_seed_is_not_int() -> None:
 
 
 @pytest.mark.parametrize("seed", [None, 0, 123])
-def test_get_rng_when_seed_is_none_return_global_rng(seed: int | None) -> None:
+def test_get_rng_when_seed_is_no_default_return_global_rng(seed: int | None) -> None:
     set_seed(seed)
-    rng1 = get_rng(None)
-    rng2 = get_rng(None)
+    rng1 = get_rng(no_default)
+    rng2 = get_rng(no_default)
     assert rng1 is rng2
 
 
-@pytest.mark.parametrize("seed", [0, 123])
+@pytest.mark.parametrize("seed", [None, 0, 123])
 def test_get_rng_when_seed_is_int_return_new_rng(seed: int) -> None:
-    rng1 = get_rng(None)
+    rng1 = get_rng()
     rng2 = get_rng(seed)
     assert rng1 is not rng2
 

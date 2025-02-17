@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from rcpy._type import SeedType, no_default
 from rcpy.activations import identity, tanh
 from rcpy.random import get_rng, noise
 from rcpy.weights import initialize_weights, uniform
@@ -37,7 +38,7 @@ class ReservoirBuilder:
     noise_gain_fb: float = 0.0
     noise_type: str = "normal"
     forward_type: str = "internal"
-    seed: int | None = None
+    seed: SeedType = no_default
 
 
 _ERR_MSG_INPUT_WEIGHTS_NOT_INITIALIZED = (
@@ -63,7 +64,7 @@ class Reservoir:
     _noise_gain_in: float
     _noise_gain_fb: float
     _noise_generator: Callable[..., np.ndarray]
-    _seed: int | None
+    _seed: SeedType
     _forward_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
 
     def __init__(self, builder: ReservoirBuilder) -> None:
@@ -191,7 +192,7 @@ class Reservoir:
         noise_gain_in: float | None = None,
         noise_gain_fb: float | None = None,
         noise_type: str | None = None,
-        seed: int | None = None,
+        seed: SeedType = no_default,
     ) -> None:
         if noise_gain_rc is None:
             noise_gain_rc = self._builder.noise_gain_rc
@@ -201,7 +202,7 @@ class Reservoir:
             noise_gain_fb = self._builder.noise_gain_fb
         if noise_type is None:
             noise_type = self._builder.noise_type
-        if seed is None:
+        if seed is no_default:
             seed = self._builder.seed
 
         rng = get_rng(seed)
@@ -225,7 +226,7 @@ class Reservoir:
         connectivity: float | None = None,
         W_init: Callable[..., WeightsType] | None = None,
         sparsity_type: SparsityType = "csr",
-        seed: int | None = None,
+        seed: SeedType = no_default,
     ) -> WeightsType:
         if reservoir_size is None:
             reservoir_size = self._builder.reservoir_size
@@ -235,7 +236,7 @@ class Reservoir:
             connectivity = self._builder.connectivity
         if W_init is None:
             W_init = self._builder.W_init
-        if seed is None:
+        if seed is no_default:
             seed = self._builder.seed
 
         self._W = initialize_weights(
@@ -254,7 +255,7 @@ class Reservoir:
         input_connectivity: float,
         bias_scaling: float | bool,
         Win_init: Callable[..., WeightsType],
-        seed: int | None,
+        seed: SeedType,
     ) -> np.ndarray:
         bias = np.ravel(
             initialize_weights(
@@ -277,7 +278,7 @@ class Reservoir:
         bias_scaling: float | bool | None = None,
         Win_init: Callable[..., WeightsType] | None = None,
         sparsity_type: SparsityType = "dense",
-        seed: int | None = None,
+        seed: SeedType = no_default,
     ) -> WeightsType:
         if reservoir_size is None:
             reservoir_size = self._builder.reservoir_size
@@ -293,7 +294,7 @@ class Reservoir:
             bias_scaling = float(bias_scaling)
         if Win_init is None:
             Win_init = self._builder.Win_init
-        if seed is None:
+        if seed is no_default:
             seed = self._builder.seed
 
         # Calculate bias vector.
@@ -323,7 +324,7 @@ class Reservoir:
         fb_connectivity: float | None = None,
         Wfb_init: Callable[..., WeightsType] | None = None,
         sparsity_type: SparsityType = "dense",
-        seed: int | None = None,
+        seed: SeedType = no_default,
     ) -> WeightsType:
         if reservoir_size is None:
             reservoir_size = self._builder.reservoir_size
@@ -333,7 +334,7 @@ class Reservoir:
             fb_connectivity = self._builder.fb_connectivity
         if Wfb_init is None:
             Wfb_init = self._builder.Wfb_init
-        if seed is None:
+        if seed is no_default:
             seed = self._builder.seed
 
         # Check if the given feedback scaling vector has correct of elements.
