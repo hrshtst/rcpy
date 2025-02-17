@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from rebasicspy.node import Model, Node
+from rcpy.node import Model, Node
 
 
 class TestNode:

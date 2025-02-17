@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from rebasicspy.readout import Readout, compute_error, initialize_weights
+from rcpy.readout import Readout, compute_error, initialize_weights
 
 
 class LMS(Readout):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from rebasicspy.random import get_rng
+from rcpy.random import get_rng
 
 _ERR_MSG_READOUT_OPT_NOT_STARTED = "Optimization of readout layer has not started yet."
 

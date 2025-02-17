@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from rebasicspy.ridge import Ridge
+from rcpy.ridge import Ridge
 
 from ._base import RandDataSet, SmallDataSet, SmallDataSetMO
 

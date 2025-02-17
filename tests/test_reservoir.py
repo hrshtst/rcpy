@@ -8,16 +8,16 @@ import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from scipy.sparse import csc_matrix, csr_matrix
 
-from rebasicspy.activations import identity, relu, sigmoid, softmax, tanh
-from rebasicspy.random import get_rng
-from rebasicspy.reservoir import Reservoir, ReservoirBuilder
-from rebasicspy.weights import normal, ones, uniform
+from rcpy.activations import identity, relu, sigmoid, softmax, tanh
+from rcpy.random import get_rng
+from rcpy.reservoir import Reservoir, ReservoirBuilder
+from rcpy.weights import normal, ones, uniform
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from rebasicspy._type import SparsityType
-    from rebasicspy.metrics import WeightsType
+    from rcpy._type import SparsityType
+    from rcpy.metrics import WeightsType
 
 
 def get_default_builder() -> ReservoirBuilder:

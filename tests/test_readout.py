@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from rebasicspy.readout import Readout, compute_error, initialize_weights, rescale_data
+from rcpy.readout import Readout, compute_error, initialize_weights, rescale_data
 
 
 @pytest.fixture

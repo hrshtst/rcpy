@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from numpy.random import default_rng
 
-from rebasicspy.random import get_rng, get_rvs, get_seed, noise, set_seed
+from rcpy.random import get_rng, get_rvs, get_seed, noise, set_seed
 
 
 def test_set_seed() -> None:

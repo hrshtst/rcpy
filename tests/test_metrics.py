@@ -5,7 +5,7 @@ import pytest
 from numpy.testing import assert_almost_equal
 from scipy.sparse import coo_matrix
 
-from rebasicspy.metrics import mean_squared_error, spectral_radius
+from rcpy.metrics import mean_squared_error, spectral_radius
 
 
 @pytest.mark.parametrize(

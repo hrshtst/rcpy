@@ -9,11 +9,11 @@ import pytest
 from numpy.testing import assert_array_equal
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
-from rebasicspy.random import get_rng
-from rebasicspy.weights import bernoulli, initialize_weights, normal, ones, sparse_random, uniform, zeros
+from rcpy.random import get_rng
+from rcpy.weights import bernoulli, initialize_weights, normal, ones, sparse_random, uniform, zeros
 
 if TYPE_CHECKING:
-    from rebasicspy._type import SparsityType, WeightsType
+    from rcpy._type import SparsityType, WeightsType
 
 
 def actual_spectral_radius(w: WeightsType) -> float:

@@ -9,15 +9,15 @@ from scipy import sparse
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, diags
 from scipy.sparse.linalg import ArpackNoConvergence
 
-from rebasicspy.metrics import spectral_radius
-from rebasicspy.random import get_rng, get_rvs
+from rcpy.metrics import spectral_radius
+from rcpy.random import get_rng, get_rvs
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from numpy.random import Generator
 
-    from rebasicspy._type import SparsityType, WeightsType
+    from rcpy._type import SparsityType, WeightsType
 
 _epsilon = 1e-8  # avoid division by zero when rescaling spectral radius
 

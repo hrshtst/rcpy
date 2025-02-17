@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from scipy import linalg
 
-from rebasicspy.readout import Readout, rescale_data
+from rcpy.readout import Readout, rescale_data
 
 
 class Ridge(Readout):

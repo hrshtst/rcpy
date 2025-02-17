@@ -10,7 +10,7 @@ from scipy.sparse import issparse
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from rebasicspy._type import WeightsType
+    from rcpy._type import WeightsType
 
 
 @overload

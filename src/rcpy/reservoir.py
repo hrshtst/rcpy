@@ -8,12 +8,12 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from rebasicspy.activations import identity, tanh
-from rebasicspy.random import get_rng, noise
-from rebasicspy.weights import initialize_weights, uniform
+from rcpy.activations import identity, tanh
+from rcpy.random import get_rng, noise
+from rcpy.weights import initialize_weights, uniform
 
 if TYPE_CHECKING:
-    from rebasicspy._type import SparsityType, WeightsType
+    from rcpy._type import SparsityType, WeightsType
 
 
 @dataclass
