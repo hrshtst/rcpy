@@ -39,7 +39,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Upgrade nox
         run: |
@@ -47,7 +47,7 @@ jobs:
           nox --version
 
       - name: Run lints
-        run: nox --session lint
+        run: nox --non-interactive --error-on-missing-interpreter --session "lint"
 
   tests:
     timeout-minutes: 10
@@ -63,8 +63,9 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.python-version == '3.12' }}
+    continue-on-error: ${{ matrix.python-version == '3.13' }}
 
     steps:
       - name: Checkout
@@ -79,13 +80,17 @@ jobs:
           allow-prereleases: true
           cache: "pip"
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Upgrade nox
         run: |
           python -m pip install --upgrade 'nox[uv]'
           nox --version
 
-      - name: Run the test suite
-        run: nox --session tests-${{ matrix.python-version }}
+      - name: Run tests on ${{ matrix.os }}
+        run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
+
 # Local Variables:
 # jinx-local-words: "ci github macos md nox os ubuntu uv"
 # End:
