@@ -116,6 +116,7 @@ ignore = [
   "N806",                       # Ignore variable names with non-lowercase
   "N815",                       # Ignore class variable names that follow 'mixedCase'
   "PLR0913",                    # Ignore many arguments in function definition
+  "RET504",                     # Ignore unnecessary assignment immediately precede a return
   "SIM108",                     # Ignore using ternary operator {contents} instead of if-else-block
   "S101",                       # Ignore detection of using assert
 ]

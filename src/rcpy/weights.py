@@ -329,13 +329,11 @@ def bernoulli(
     )
 
 
-def ones(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:
-    _ = kwargs
+def ones(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:  # noqa: ARG001
     return np.ones(shape, dtype=float)
 
 
-def zeros(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:
-    _ = kwargs
+def zeros(shape: int | tuple[int, ...], **kwargs) -> np.ndarray:  # noqa: ARG001
     return np.zeros(shape, dtype=float)
 
 

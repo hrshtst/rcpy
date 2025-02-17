@@ -50,11 +50,7 @@ class Readout:
             self.process_backward_batch()
 
     def process_backward(self, x: np.ndarray, y_target: float | np.ndarray, sample_weight: float | None) -> None:
-        _ = (
-            x,
-            y_target,
-            sample_weight,
-        )
+        pass
 
     def process_backward_batch(self) -> None:
         self._batch_count = 0

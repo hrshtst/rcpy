@@ -266,7 +266,6 @@ class Reservoir:
                 seed=seed,
             ),
         )
-        _ = bias  # suppress lint error
         return bias
 
     def initialize_input_weights(

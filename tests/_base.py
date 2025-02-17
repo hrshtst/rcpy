@@ -61,7 +61,6 @@ class LargeDataSet(DataSetBase):
     def _gen_target(self, X: np.ndarray, noise: np.ndarray) -> np.ndarray:
         # Y = 2 * X[:, 0] + 0.1 * X[:, 1] - 4 * X[:, 2] + 0.5 * X[:, 3] + noise
         Y = np.ravel(np.dot(X, self.coef.T)) + noise
-        _ = Y
         return Y
 
     @property
