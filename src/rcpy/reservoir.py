@@ -37,6 +37,8 @@ class ReservoirBuilder:
     noise_gain_in: float = 0.0
     noise_gain_fb: float = 0.0
     noise_type: str = "normal"
+    reservoir_reset_gain: float = 0.0
+    reservoir_reset_type: str = "uniform"
     forward_type: str = "internal"
     seed: SeedType = no_default
 
@@ -64,6 +66,7 @@ class Reservoir:
     _noise_gain_in: float
     _noise_gain_fb: float
     _noise_generator: Callable[..., np.ndarray]
+    _reservoir_reset: Callable[..., np.ndarray]
     _seed: SeedType
     _forward_fn: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
 
@@ -161,6 +164,10 @@ class Reservoir:
     def noise_generator(self) -> Callable[..., np.ndarray]:
         return self._noise_generator
 
+    @property
+    def reservoir_reset(self) -> Callable[..., np.ndarray]:
+        return self._reservoir_reset
+
     def initialize_activation(
         self,
         activation: Callable[[np.ndarray], np.ndarray] | None = None,
@@ -211,12 +218,38 @@ class Reservoir:
         self._noise_gain_fb = noise_gain_fb
         self._noise_generator = partial(noise, rng=rng, dist=noise_type)
 
-    def initialize_reservoir_state(self, reservoir_size: int | None = None) -> np.ndarray:
+    def initialize_reservoir_state(
+        self,
+        reservoir_size: int | None = None,
+        reset_gain: float | None = None,
+        reset_type: str | None = None,
+        seed: SeedType = no_default,
+    ) -> np.ndarray:
         if reservoir_size is None:
             reservoir_size = self._builder.reservoir_size
+        if reset_gain is None:
+            reset_gain = self._builder.reservoir_reset_gain
+        if reset_type is None:
+            reset_type = self._builder.reservoir_reset_type
+        if seed is no_default:
+            seed = self._builder.seed
 
-        self._x = np.zeros(reservoir_size)
-        self._s = np.zeros(reservoir_size)
+        rng = get_rng(seed)
+        self._reservoir_reset = partial(noise, rng=rng, dist=reset_type)
+        return self.reset_reservoir_state(reservoir_size, reset_gain)
+
+    def reset_reservoir_state(
+        self,
+        reservoir_size: int | None = None,
+        reset_gain: float | None = None,
+    ) -> np.ndarray:
+        if reservoir_size is None:
+            reservoir_size = self._builder.reservoir_size
+        if reset_gain is None:
+            reset_gain = self._builder.reservoir_reset_gain
+
+        self._x = self.reservoir_reset(shape=reservoir_size, gain=reset_gain)
+        self._s = self.reservoir_reset(shape=reservoir_size, gain=reset_gain)
         return self._x
 
     def initialize_internal_weights(

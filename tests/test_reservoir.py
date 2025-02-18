@@ -129,6 +129,41 @@ class TestReservoir:
         assert res.noise_generator.keywords["rng"] is rng  # type: ignore
         assert res.noise_generator.keywords["dist"] == dist  # type: ignore
 
+    @pytest.mark.parametrize(
+        ("size", "gain", "dist"),
+        [(5, 0.0, "uniform"), (10, 0.01, "uniform"), (15, 0.02, "normal")],
+    )
+    def test_initialize_reservoir_state(self, size: int, gain: float, dist: str) -> None:
+        builder = ReservoirBuilder(
+            reservoir_size=size,
+            spectral_radius=0.95,
+            connectivity=0.2,
+            leaking_rate=1.0,
+            reservoir_reset_gain=gain,
+            reservoir_reset_type=dist,
+        )
+        res = Reservoir(builder)
+        rng = get_rng()
+        assert res.reservoir_reset.keywords["rng"] is rng  # type: ignore
+        assert res.reservoir_reset.keywords["dist"] is dist  # type: ignore
+        assert res.x.shape == (size,)
+        if dist == "uniform":
+            assert np.all(res.x >= -gain)
+            assert np.all(res.x <= gain)
+        if gain == 0.0:
+            assert np.all(res.x == 0.0)
+        else:
+            assert np.any(res.x != 0.0)
+
+        assert res.internal_state.shape == (size,)
+        if dist == "uniform":
+            assert np.all(res.internal_state >= -gain)
+            assert np.all(res.internal_state <= gain)
+        if gain == 0.0:
+            assert np.all(res.internal_state == 0.0)
+        else:
+            assert np.any(res.internal_state != 0.0)
+
     def test_initialize_internal_weights(self, default_reservoir: Reservoir) -> None:
         W = default_reservoir.W
         assert W.shape == (15, 15)
