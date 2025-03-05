@@ -433,10 +433,6 @@ class Reservoir:
         return x_next
 
     def forward(self, u: np.ndarray, y: np.ndarray | None = None) -> np.ndarray:
-        if self.has_feedback() and y is None:
-            msg = "Reservoir has feedback connection, but no feedback signal was given."
-            raise RuntimeError(msg)
-
         return self._forward_fn(u, y)
 
 
