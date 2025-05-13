@@ -145,6 +145,7 @@ class Esn:
         self._warmup = self._builder.warmup
         self._reservoir = Reservoir(self._builder.reservoir)
         self._readout = Ridge(1e-4)
+        self._readout.batch_interval = 1
 
     @property
     def y0_default(self) -> np.ndarray:
