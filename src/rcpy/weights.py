@@ -173,6 +173,8 @@ def uniform(
     if low > high:
         msg = "`high` boundary expected to be bigger than `low` boundary."
         raise ValueError(msg)
+    print(f"{low=}")
+    print(f"{high=}")
     return sparse_random(
         shape,
         distribution="uniform",
@@ -389,6 +391,7 @@ def initialize_weights(
     **kwargs,
 ) -> WeightsType:
     iteration = 10
+    print(f"{scaling=}")
     while iteration > 0:
         w = w_initializer(shape, sparsity_type=sparsity_type, **kwargs)
         try:

@@ -66,7 +66,7 @@ class DynSys:
         self.dim = self.estimate_dim(f)
         self.y0_low = y0_low
         self.y0_high = y0_high
-        self.rng = get_rng(12345)  # Get new RNG instance to generate consistent initial values.
+        self.rng = get_rng(12121)  # Get new RNG instance to generate consistent initial values.
 
     @staticmethod
     def estimate_dim(f: Callable) -> int:
@@ -185,11 +185,17 @@ class Esn:
             self._reservoir.initialize_feedback_weights(self._output_dim)
 
         y = y0 if y0 is not None else self.y0_default
+        print(f"{enable_feedback=}")
+        print(f"{teacher_forcing=}")
+        print(f"{y=}")
         for i, (u, d) in enumerate(zip(U, D, strict=True)):
+            print(f"{u=}")
             if self._reservoir.has_feedback():
                 x = self._reservoir.forward(u, y)
             else:
                 x = self._reservoir.forward(u)
+            # print(f"{x=}")
+            # input()
             if warmup < i:
                 self._readout.backward(x, d)
             y = d if teacher_forcing else self._readout.predict(x)
@@ -332,14 +338,17 @@ def test_vdp2(
         bias_scaling=0.0,
         noise_gain_in=0.0,
     )
-    model = Esn(EsnBuilder(res))
+    model = Esn(EsnBuilder(res, teacher_forcing=True))
 
     print("Training in progress...")  # noqa: T201
+    print(f"Initial: {model.reservoir.x=}")
     for i, data in enumerate(train_dataset):
-        print(f"Training data ({i + 1}/{N_data})...")  # noqa: T201
+        # print(f"Training data ({i + 1}/{N_data})...")  # noqa: T201
         U, D = data[:-1], data[1:]
         model.reservoir.reset_reservoir_state()
         model.fit(U, D)
+        # print(f"i={i}: {model.reservoir.x=}")
+        # input()
     model.readout.fit()
 
     # test section
@@ -361,6 +370,7 @@ def test_vdp2(
 
 def main() -> None:
     set_seed(12345)
+    # test_vdp()
     test_vdp2()
     plt.show()
 

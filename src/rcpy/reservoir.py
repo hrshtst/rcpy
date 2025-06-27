@@ -339,6 +339,7 @@ class Reservoir:
             raise ValueError(msg)
 
         # Calculate Win matrix.
+        print(f"initialize_weights")
         self._Win = initialize_weights(
             (reservoir_size, input_dim),
             Win_init,
@@ -347,6 +348,11 @@ class Reservoir:
             sparsity_type=sparsity_type,
             seed=seed,
         )
+        self._Win = np.random.uniform(low=-input_scaling, high=input_scaling, size=(reservoir_size, input_dim))
+        print(f"{input_scaling=}")
+        print(f"{self._Win=}, {self._Win.shape=}")
+        print(f"{self._bias=}, {self._bias.shape=}")
+        print(f"{self._W.toarray()=}")
         return self._Win
 
     def initialize_feedback_weights(
@@ -394,7 +400,13 @@ class Reservoir:
         g_in = self.noise_gain_in
         noise = self.noise_generator
 
-        pre_x = Win @ (u + noise(shape=u.shape, gain=g_in)) + W @ x + bias
+        # pre_x = Win @ (u + noise(shape=u.shape, gain=g_in)) + W @ x + bias
+        print(f"{Win.shape}, {u.shape}, {W.shape}, {x.shape}")
+        print(f"{np.dot(Win, u).shape}, {np.dot(W, x).shape}")
+        print(f"{type(np.dot(Win, u))}, {type(np.dot(W, x))}")
+        # pre_x = np.asarray(np.dot(np.asarray(Win), u)) + np.asarray(np.dot(np.asarray(W), x))
+        pre_x = Win @ u + W @ x
+        print(f"{pre_x=}")
 
         if y is not None:
             Wfb = self.Wfb
@@ -408,12 +420,19 @@ class Reservoir:
     def forward_internal(self, u: np.ndarray, y: np.ndarray | None) -> np.ndarray:
         x = self.x
         lr = self.leaking_rate
-        f = self.activation
+        # f = self.activation
+        f = np.tanh
 
         g_rc = self.noise_gain_rc
         noise = self.noise_generator
 
-        x_next = (1.0 - lr) * x + lr * f(self.kernel(u, x, y)) + noise(shape=x.shape, gain=g_rc)
+        # x_next = (1.0 - lr) * x + lr * f(self.kernel(u, x, y)) + noise(shape=x.shape, gain=g_rc)
+        print(f"{lr=}")
+        print(f"{x=}")
+        k = self.kernel(u, x, y)
+        print(f"{k=}")
+        x_next = (1.0 - lr) * x + lr * f(k)
+        print(f"{x_next=}")
         self._x = x_next
         return x_next
 
@@ -421,7 +440,8 @@ class Reservoir:
         x = self.x
         s = self.internal_state
         lr = self.leaking_rate
-        f = self.activation
+        # f = self.activation
+        f = np.tanh
 
         g_rc = self.noise_gain_rc
         noise = self.noise_generator
