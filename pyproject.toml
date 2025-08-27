@@ -1,24 +1,26 @@
-[build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
-
 [project]
 name = "rcpy"
-dynamic = ["version"]
-description = "A simple implementation of reservoir computing in Python"
+version = "0.1.0"
+description = "Reservoir computing framework integrated with Taichi Lang"
+readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
-    {name = "Hiroshi Atsuta", email = "atsuta@ieee.org"},
+    { name = "Hiroshi Atsuta", email = "atsuta@ieee.org" }
 ]
 maintainers = [
     { name = "Hiroshi Atsuta", email = "atsuta@ieee.org" },
 ]
+requires-python = ">=3.11"
 dependencies = [
-    "numpy<2.2.0",
-    "pyplotutil",
-    "scipy>=1.14.1",
+    "jinja2>=3.1.6",
+    "matplotlib>=3.10.5",
+    "numpy>=2.3.2",
+    "omegaconf>=2.3.0",
+    "pandas>=2.3.2",
+    "pyqt6>=6.9.1",
+    "scipy>=1.16.1",
+    "seaborn>=0.13.2",
+    "taichi>=1.7.4",
 ]
-readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
 license = {text = "MIT"}
 keywords = []
 classifiers = [
@@ -45,29 +47,21 @@ Discussions = "https://github.com/hrshtst/rcpy/discussions"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.4",
-    "pytest-cov>=6.0.0",
+    "mypy>=1.17.1",
+    "nox>=2025.5.1",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
     "pytest-randomly>=3.16.0",
-    "pytest-xdist>=3.6.1",
-    "mypy>=1.13.0",
-    "nox>=2024.10.9",
-    "ruff>=0.8.4",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.12.10",
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/rcpy"]
+[build-system]
+requires = ["uv_build>=0.8.13,<0.9.0"]
+build-backend = "uv_build"
 
 [tool.uv]
 cache-keys = [{ git = { commit = true, tags = true } }]
-
-[tool.uv.sources]
-pyplotutil = { git = "https://github.com/hrshtst/pyplotutil.git" }
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
@@ -142,11 +136,7 @@ convention = "numpy"
 [tool.ruff.lint.pylint]
 # Maximum number of arguments allowed for a function or method
 # definition (see PLR0913).
-max-args = 15                   # Default: 5
-
-[tool.ruff.lint.isort]
-# Always add import annotations
-required-imports = ["from __future__ import annotations"]
+max-args = 20                   # Default: 5
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
@@ -202,9 +192,12 @@ module = [
   "numpy.*",
   "scipy.*",
   "matplotlib.*",
+  "pandas.*",
+  "seaborn.*",
+  "taichi.*",
 ]
 ignore_missing_imports = true
 
 # Local Variables:
-# jinx-local-words: "McCabe Pyflakes addopts args backend bzr cov defs dev direnv doctests hatchling hg ini ipynb isort matplotlib md mixedCase mypy nox numpy pycache pycodestyle pydocstyle pyenv pylint pypackages pyplotutil pyright pytest pytype ra rcpy reStructuredText rgx scipy src svn testpaths tomli tox unfixable untyped urls uv vcs venv venvPath vscode xdist zA"
+# jinx-local-words: "McCabe Numpy Pyflakes addopts args bzr cov defs dev direnv doctests hg ini ipynb isort matplotlib md mixedCase mypy nox numpy omegaconf pycache pycodestyle pydocstyle pyenv pylint pypackages pyright pytest pytype ra rcpy reStructuredText rgx scipy seaborn src svn taichi testpaths tox untyped urls uv venv venvPath vscode xdist zA"
 # End:
