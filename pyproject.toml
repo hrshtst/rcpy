@@ -30,7 +30,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -92,6 +91,9 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "examples/old",
+    "src/rcpy/old",
+    "tests/old",
 ]
 
 # Same as Black.
@@ -167,7 +169,7 @@ docstring-code-line-length = "dynamic"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --ignore=tests/old"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "serious",
