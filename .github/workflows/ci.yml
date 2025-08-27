@@ -60,7 +60,6 @@ jobs:
         # - macos-latest
         # - windows-latest
         python-version:
-          - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
@@ -90,7 +89,6 @@ jobs:
 
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
-
 # Local Variables:
 # jinx-local-words: "ci github macos md nox os ubuntu uv"
 # End:
