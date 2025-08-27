@@ -1,5 +1,5 @@
 import pytest
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf  # Import DictConfig
 
 from rcpy.config import ExperimentConfig, get_config
 
@@ -10,7 +10,8 @@ def test_get_config_returns_correct_type():
     and that its structure matches the ExperimentConfig dataclass.
     """
     conf = get_config()
-    assert isinstance(conf, OmegaConf)
+    # FIX: Assert that the instance is of type DictConfig
+    assert isinstance(conf, DictConfig)
     # Check if the structure is valid by trying to instantiate the dataclass from it
     try:
         ExperimentConfig(**conf)

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 import taichi as ti
@@ -5,13 +7,18 @@ import taichi as ti
 from rcpy.config import get_config
 from rcpy.esn import EchoStateNetwork, NumpyEchoStateNetwork
 
+# Ignore DeprecationWarning from external libraries like Taichi
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 @pytest.fixture
 def setup_esn_test():
     """A pytest fixture for ESN tests."""
     conf = get_config()
     conf.esn.n_reservoir = 50
-    conf.data.n_train_samples = 100
+    # Ensure n_train_samples > washout_period to avoid zero-sized arrays
+    conf.data.n_train_samples = 200
+    conf.data.washout_period = 100
 
     train_input = np.random.rand(conf.data.n_train_samples, conf.esn.n_input).astype(np.float32)
     train_target = np.random.rand(conf.data.n_train_samples, conf.esn.n_output).astype(np.float32)
