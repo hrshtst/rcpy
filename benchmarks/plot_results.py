@@ -85,7 +85,7 @@ def generate_plots(df, output_dir):
             data=df, x="n_reservoir", y=metric, hue="Configuration", style="Configuration", marker="o", ax=ax_single
         )
         ax_single.set_title(f"ESN Benchmark: {title}\n(Lines are Mean, Shaded areas are 95% CI)", fontsize=16)
-        ax_single.set_xlabel("Reservoir Size", fontsize=12)
+        ax_single.set_xlabel("Reservoir Size (n_reservoir)", fontsize=12)
         ax_single.set_ylabel("Time (seconds)", fontsize=12)
         ax_single.set_xscale("log", base=2)
         ax_single.set_yscale("log")
@@ -152,14 +152,19 @@ def generate_latex_summary(df, output_dir):
 \usepackage{booktabs}
 \usepackage{caption}
 \usepackage{float}
-\usepackage{amsmath}
+\usepackage{amsmath}   % For \pm command
+\usepackage{pdflscape} % For landscape pages
 
 \begin{document}
+\begin{landscape}
 \section*{ESN Performance Benchmark Results}
 """
+
     latex_postamble = r"""
+\end{landscape}
 \end{document}
 """
+
     full_latex_document = latex_preamble + final_tables_string + latex_postamble
 
     output_path = os.path.join(output_dir, "benchmark_summary_table.tex")
