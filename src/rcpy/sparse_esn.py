@@ -80,7 +80,7 @@ class SparseEchoStateNetwork:
         w_in_np = (np.random.rand(self.cfg.n_reservoir, self.cfg.n_input) * 2 - 1).astype(np.float32)
         self.W_in.from_numpy(w_in_np)
 
-        # CORRECTED: Build the sparse reservoir weight matrix using SciPy first
+        # Build the sparse reservoir weight matrix using SciPy first
         print("  Generating sparse W_res using SciPy...")
         n_reservoir = self.cfg.n_reservoir
         w_res_scipy = scipy.sparse.random(
@@ -93,9 +93,20 @@ class SparseEchoStateNetwork:
         )
         w_res_scipy.data = (w_res_scipy.data * 2) - 1  # Shift from [0, 1] to [-1, 1]
 
-        # Build the Taichi sparse matrix from the SciPy matrix
+        # Build the Taichi sparse matrix from the SciPy COO data
         builder = SparseMatrixBuilder(n_reservoir, n_reservoir, max_num_triplets=w_res_scipy.nnz, dtype=self.dtype)
-        builder.build_from_scipy(w_res_scipy)
+
+        @ti.kernel
+        def fill_builder_from_coo(
+            rows: ti.types.ndarray(),
+            cols: ti.types.ndarray(),
+            vals: ti.types.ndarray(),
+            builder: ti.types.sparse_matrix_builder(),
+        ):
+            for i in range(rows.shape[0]):
+                builder[rows[i], cols[i]] += vals[i]
+
+        fill_builder_from_coo(w_res_scipy.row, w_res_scipy.col, w_res_scipy.data, builder)
         self.W_res = builder.build()
 
         # Estimate and scale the spectral radius
@@ -155,7 +166,7 @@ class SparseEchoStateNetwork:
         X_T = collected_states.T
         Y_T = target_data[washout_period:].T
 
-        # CORRECTED: Use the original TaichiRidge for the dense readout problem
+        # Use the original TaichiRidge for the dense readout problem
         print("\n--- Using Taichi Ridge Solver ---")
         ridge_solver = TaichiRidge(alpha=solver_cfg.ridge_alpha, n_iter=solver_cfg.cg_iterations)
         w_out_np = ridge_solver.fit(X_T, Y_T)
