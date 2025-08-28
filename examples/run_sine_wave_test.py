@@ -1,10 +1,13 @@
 #!/usr/bin/env python
+import argparse
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
 import taichi as ti
 from omegaconf import OmegaConf
 
+# Assumes the rcpy library is installed or in the Python path
 from rcpy.config import get_config
 from rcpy.esn import EchoStateNetwork, NumpyEchoStateNetwork
 
@@ -12,14 +15,29 @@ from rcpy.esn import EchoStateNetwork, NumpyEchoStateNetwork
 def main():
     """
     An example script showing how to use the ESN library to train a model
-    on a noisy sine wave prediction task.
+    on a noisy sine wave prediction task, with configurable parameters.
     """
-    # --- 1. Load and customize configuration ---
-    conf = get_config()
+    # --- 1. Configuration Loading ---
+    parser = argparse.ArgumentParser(description="Run a single ESN example.")
+    parser.add_argument("--config", type=str, help="Path to a YAML configuration file.")
+    # Add a specific argument for the plot output file
+    parser.add_argument(
+        "--plot_output_file",
+        type=str,
+        default="sine_wave_prediction.png",
+        help="Path to save the output plot PNG file.",
+    )
 
-    # Example of overriding a parameter
-    conf.esn.n_reservoir = 1000  # Use a smaller reservoir for a quick example run
-    conf.experiment.use_numpy_version = False  # Set to True to test the NumPy version
+    args, unknown = parser.parse_known_args()
+
+    conf = get_config()
+    if args.config:
+        file_conf = OmegaConf.load(args.config)
+        conf = OmegaConf.merge(conf, file_conf)
+
+    # OmegaConf handles all other command-line overrides
+    cli_conf = OmegaConf.from_cli(unknown)
+    conf = OmegaConf.merge(conf, cli_conf)
 
     print("--- Configuration ---")
     print(OmegaConf.to_yaml(conf))
@@ -27,7 +45,10 @@ def main():
 
     # --- 2. Initialize Taichi if using the Taichi version ---
     if not conf.experiment.use_numpy_version:
-        ti.init(arch=conf.taichi.backend)
+        if conf.taichi.backend.lower() == "gpu":
+            ti.init(arch=ti.gpu)
+        else:
+            ti.init(arch=ti.cpu)
         print(f"Taichi backend initialized: {conf.taichi.backend}")
 
     # --- 3. Generate Data ---
@@ -74,6 +95,16 @@ def main():
             bbox=dict(boxstyle="round,pad=0.3", fc="wheat", alpha=0.7),
         )
         plt.tight_layout()
+
+        # Save the figure to the file specified by the command-line argument
+        output_filename = args.plot_output_file
+        output_dir = os.path.dirname(output_filename)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        plt.savefig(output_filename)
+        print(f"Plot saved to '{output_filename}'")
+
         plt.show()
 
 
