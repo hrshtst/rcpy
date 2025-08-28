@@ -7,8 +7,8 @@
 echo "--- Starting Dense vs. Sparse ESN Benchmark Suite ---"
 
 # --- Configuration ---
-NUM_RUNS=5
-SIZES=(1000 2000 4000 8000)
+NUM_RUNS=10
+SIZES=(1000 2000 4000 8000 10000 20000 40000)
 SPARSITIES=(0.9 0.95 0.98 0.99 0.995)
 MAIN_SCRIPT="benchmarks/run_sparse_comparison.py"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
