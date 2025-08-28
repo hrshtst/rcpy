@@ -35,13 +35,16 @@ def test_sparse_esn_initialization(setup_sparse_esn_test):
     conf, _, _, _ = setup_sparse_esn_test
     esn = SparseEchoStateNetwork(conf)
 
-    assert esn.W_res is not None
-    assert isinstance(esn.W_res, ti.linalg.SparseMatrix)
-    assert esn.W_res.shape == (50, 50)
-    assert esn.x.shape == (50,)
+    # Check that the COO fields have been created
+    assert esn.W_res_rows is not None
+    assert esn.W_res_cols is not None
+    assert esn.W_res_vals is not None
+    assert isinstance(esn.W_res_vals, ti.Field)
 
-    # A simple check to see if the matrix is not empty
-    assert esn.W_res.matrix.nnz > 0
+    # Check that the number of non-zero elements is reasonable
+    expected_nnz = int(50 * 50 * (1 - 0.9))
+    assert esn.W_res_vals.shape[0] >= expected_nnz * 0.8
+    assert esn.W_res_vals.shape[0] <= expected_nnz * 1.2
 
 
 def test_sparse_esn_fit_predict(setup_sparse_esn_test):
