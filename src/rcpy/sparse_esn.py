@@ -39,29 +39,45 @@ class SparseEchoStateNetwork:
         for i in vec:
             vec[i] /= norm
 
+    @ti.kernel
+    def _materialize_spmv(self, x: ti.template(), y: ti.template()):
+        """
+        Materializes the sparse matrix-vector product (self.W_res @ x) into a concrete field y.
+        This is done by explicitly iterating over the sparse matrix elements.
+        """
+        y.fill(0)
+        for i, j in self.W_res:
+            y[i] += self.W_res[i, j] * x[j]
+
     def _estimate_spectral_radius_sparse(self, n_iters=20):
         """
         Estimates the spectral radius of the sparse W_res matrix using the power iteration method.
         """
         b_k = ti.field(dtype=self.dtype, shape=self.cfg.n_reservoir)
+        b_k_next = ti.field(dtype=self.dtype, shape=self.cfg.n_reservoir)  # A concrete field to store the result
         b_k.from_numpy(np.random.rand(self.cfg.n_reservoir).astype(np.float32))
 
         # Normalize the initial random vector
         norm = self._get_vec_norm(b_k)
-        if norm > 0:
+        if norm > 1e-9:
             self._normalize_vec(b_k, norm)
 
         # Power iteration loop
         for _ in range(n_iters):
-            b_k_next = self.W_res @ b_k
+            # Explicitly materialize the expression into b_k_next
+            self._materialize_spmv(b_k, b_k_next)
+
             norm = self._get_vec_norm(b_k_next)
-            if norm == 0:
+            if norm < 1e-9:
                 return 0.0
-            b_k.copy_from(b_k_next / norm)
+
+            # Normalize the concrete field in-place, then copy back
+            self._normalize_vec(b_k_next, norm)
+            b_k.copy_from(b_k_next)
 
         # Calculate the final eigenvalue estimate
-        w_b = self.W_res @ b_k
-        return self._get_vec_norm(w_b)
+        self._materialize_spmv(b_k, b_k_next)
+        return self._get_vec_norm(b_k_next)
 
     @ti.kernel
     def _scale_sparse_matrix_kernel(self, val: ti.f32):
@@ -122,8 +138,9 @@ class SparseEchoStateNetwork:
 
     @ti.kernel
     def _update_state_kernel(self, u_t: ti.template()):
-        # Sparse matrix-vector product for the reservoir update
-        pre_activation = self.W_res @ self.x
+        # Use the explicit SPMV kernel
+        pre_activation = ti.field(dtype=self.dtype, shape=self.cfg.n_reservoir)
+        self._materialize_spmv(self.x, pre_activation)
 
         # Add input contribution
         for i in range(self.cfg.n_reservoir):
