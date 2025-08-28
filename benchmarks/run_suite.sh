@@ -10,7 +10,7 @@ echo "--- Starting ESN Benchmark Suite ---"
 NUM_RUNS=10
 SIZES=(100 200 400 800 1000 2000 4000 8000 10000 20000 40000)
 # Use the main script from the benchmarks directory
-MAIN_SCRIPT="benchmarks/run_and_save.py"
+MAIN_SCRIPT="benchmarks/run.py"
 # Generate a unique, timestamped directory for this benchmark run
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 OUTPUT_DIR="benchmarks/results/benchmark_run_${TIMESTAMP}"
