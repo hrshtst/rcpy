@@ -24,6 +24,9 @@ def main():
     df = pd.read_csv(args.csv_path)
     output_dir = os.path.dirname(args.csv_path) or "."
 
+    # Add a connectivity column for more intuitive plotting
+    df["connectivity"] = 1.0 - df["sparsity"]
+
     # --- 2. Generate Plots ---
     generate_plots(df, output_dir)
 
@@ -41,11 +44,11 @@ def generate_plots(df, output_dir):
         ("total_time", "Total Time"),
     ]
 
-    # Group by sparsity to create a separate plot for each level
-    for sparsity, group in df.groupby("sparsity"):
+    # Group by connectivity to create a separate plot for each level
+    for connectivity, group in df.groupby("connectivity"):
         fig, axes = plt.subplots(2, 2, figsize=(20, 15))
         fig.suptitle(
-            f"Dense vs. Sparse ESN Performance (Sparsity = {sparsity})\n(Lines are Mean, Shaded areas are 95% CI)",
+            f"Dense vs. Sparse ESN Performance (Connectivity = {connectivity:.3f})\n(Lines are Mean, Shaded areas are 95% CI)",
             fontsize=20,
             y=0.97,
         )
@@ -62,9 +65,9 @@ def generate_plots(df, output_dir):
             ax.grid(True, which="both", ls="--")
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
-        perf_output_filename = os.path.join(output_dir, f"performance_sparsity_{sparsity}.png")
+        perf_output_filename = os.path.join(output_dir, f"performance_connectivity_{connectivity:.3f}.png")
         plt.savefig(perf_output_filename)
-        print(f"\nPerformance plot for sparsity {sparsity} saved to '{perf_output_filename}'")
+        print(f"\nPerformance plot for connectivity {connectivity:.3f} saved to '{perf_output_filename}'")
         plt.close(fig)
 
     print("\nAll plots generated.")
@@ -76,9 +79,9 @@ def generate_latex_summary(df, output_dir):
     all_tables_latex = []
     metrics = ["init_time", "fit_time", "predict_time", "total_time", "mse"]
 
-    # Group by sparsity, then by implementation version
-    for sparsity, group in df.groupby("sparsity"):
-        print(f"Generating LaTeX table for sparsity: {sparsity}")
+    # Group by connectivity, then by implementation version
+    for connectivity, group in df.groupby("connectivity"):
+        print(f"Generating LaTeX table for connectivity: {connectivity:.3f}")
 
         # Calculate mean and std for each version and reservoir size
         summary = group.groupby(["version", "n_reservoir"])[metrics].agg(["mean", "std"])
@@ -99,8 +102,8 @@ def generate_latex_summary(df, output_dir):
         formatted_df.columns = [col.replace("_", " ").title() for col in formatted_df.columns]
 
         latex_table_core = formatted_df.to_latex(
-            caption=f"Performance Comparison for Sparsity = {sparsity} (mean $\\pm$ std). Times are in seconds.",
-            label=f"tab:sparsity_{str(sparsity).replace('.', '')}",
+            caption=f"Performance Comparison for Connectivity = {connectivity:.3f} (mean $\\pm$ std). Times are in seconds.",
+            label=f"tab:connectivity_{str(connectivity).replace('.', 'p')}",
             column_format="l" + "r" * len(metrics),
             position="H",
             escape=False,
