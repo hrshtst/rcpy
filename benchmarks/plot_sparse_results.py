@@ -35,7 +35,7 @@ def main():
 
 
 def generate_plots(df, output_dir):
-    """Generates and saves all performance plots."""
+    """Generates and saves all performance and MSE plots."""
     sns.set_theme(style="whitegrid")
     time_metrics = [
         ("init_time", "Initialization Time"),
@@ -44,17 +44,17 @@ def generate_plots(df, output_dir):
         ("total_time", "Total Time"),
     ]
 
-    # Group by connectivity to create a separate plot for each level
+    # Group by connectivity to create a separate set of plots for each level
     for connectivity, group in df.groupby("connectivity"):
-        fig, axes = plt.subplots(2, 2, figsize=(20, 15))
-        fig.suptitle(
+        # --- Combined Performance Plot ---
+        fig_perf, axes_perf = plt.subplots(2, 2, figsize=(20, 15))
+        fig_perf.suptitle(
             f"Dense vs. Sparse ESN Performance (Connectivity = {connectivity:.3f})\n(Lines are Mean, Shaded areas are 95% CI)",
             fontsize=20,
             y=0.97,
         )
-
         for i, (metric, title) in enumerate(time_metrics):
-            ax = axes.flatten()[i]
+            ax = axes_perf.flatten()[i]
             sns.lineplot(data=group, x="n_reservoir", y=metric, hue="version", style="version", marker="o", ax=ax)
             ax.set_title(title, fontsize=14)
             ax.set_xlabel("Reservoir Size", fontsize=12)
@@ -65,10 +65,47 @@ def generate_plots(df, output_dir):
             ax.grid(True, which="both", ls="--")
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
-        perf_output_filename = os.path.join(output_dir, f"performance_connectivity_{connectivity:.3f}.png")
+        perf_output_filename = os.path.join(output_dir, f"performance_summary_connectivity_{connectivity:.3f}.png")
         plt.savefig(perf_output_filename)
-        print(f"\nPerformance plot for connectivity {connectivity:.3f} saved to '{perf_output_filename}'")
-        plt.close(fig)
+        print(f"\nCombined performance plot for connectivity {connectivity:.3f} saved to '{perf_output_filename}'")
+
+        # --- Individual Performance Plots ---
+        for metric, title in time_metrics:
+            fig_single, ax_single = plt.subplots(figsize=(12, 8))
+            sns.lineplot(
+                data=group, x="n_reservoir", y=metric, hue="version", style="version", marker="o", ax=ax_single
+            )
+            ax_single.set_title(
+                f"ESN Benchmark: {title} (Connectivity = {connectivity:.3f})\n(Lines are Mean, Shaded areas are 95% CI)",
+                fontsize=16,
+            )
+            ax_single.set_xlabel("Reservoir Size (n_reservoir)", fontsize=12)
+            ax_single.set_ylabel("Time (seconds)", fontsize=12)
+            ax_single.set_xscale("log", base=2)
+            ax_single.set_yscale("log")
+            ax_single.legend(title="Implementation")
+            ax_single.grid(True, which="both", ls="--")
+            plt.tight_layout()
+            single_filename = os.path.join(output_dir, f"benchmark_{metric}_connectivity_{connectivity:.3f}.png")
+            plt.savefig(single_filename)
+            print(f"Individual plot saved to '{single_filename}'")
+            plt.close(fig_single)
+
+        # --- MSE Plot ---
+        fig_mse, ax_mse = plt.subplots(figsize=(12, 8))
+        sns.lineplot(data=group, x="n_reservoir", y="mse", hue="version", style="version", marker="o", ax=ax_mse)
+        ax_mse.set_title(
+            f"Prediction Accuracy (MSE) vs. Reservoir Size (Connectivity = {connectivity:.3f})", fontsize=16
+        )
+        ax_mse.set_xlabel("Reservoir Size", fontsize=12)
+        ax_mse.set_ylabel("Mean Squared Error (MSE)", fontsize=12)
+        ax_mse.set_xscale("log", base=2)
+        ax_mse.legend(title="Implementation")
+        ax_mse.grid(True, which="both", ls="--")
+        plt.tight_layout()
+        mse_output_filename = os.path.join(output_dir, f"benchmark_mse_connectivity_{connectivity:.3f}.png")
+        plt.savefig(mse_output_filename)
+        print(f"MSE plot saved to '{mse_output_filename}'")
 
     print("\nAll plots generated.")
     plt.show()
