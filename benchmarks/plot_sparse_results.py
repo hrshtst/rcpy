@@ -100,6 +100,7 @@ def generate_plots(df, output_dir):
         ax_mse.set_xlabel("Reservoir Size", fontsize=12)
         ax_mse.set_ylabel("Mean Squared Error (MSE)", fontsize=12)
         ax_mse.set_xscale("log", base=2)
+        ax_mse.set_ylim(0.0, 0.005)
         ax_mse.legend(title="Implementation")
         ax_mse.grid(True, which="both", ls="--")
         plt.tight_layout()
