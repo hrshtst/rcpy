@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import argparse
+import csv
 import os
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,18 +67,30 @@ def main():
     test_target = data[conf.data.n_train_samples + 1 :]
 
     # --- 4. Instantiate, Train, and Predict ---
+    start_init = time.perf_counter()
     if conf.experiment.use_numpy_version:
         esn = NumpyEchoStateNetwork(conf)
     else:
         esn = EchoStateNetwork(conf)
+    end_init = time.perf_counter()
+    init_time = end_init - start_init
 
+    start_fit = time.perf_counter()
     esn.fit(train_input, train_target, conf)
+    end_fit = time.perf_counter()
+    fit_time = end_fit - start_fit
+
+    start_predict = time.perf_counter()
     predictions = esn.predict(test_input, conf)
+    end_predict = time.perf_counter()
+    predict_time = end_predict - start_predict
+
+    total_time = init_time + fit_time + predict_time
+    mse = np.mean((predictions[: len(test_target)] - test_target) ** 2)
 
     # --- 5. Plot Results ---
     if conf.experiment.show_plot:
         print("\nPlotting results...")
-        mse = np.mean((predictions[: len(test_target)] - test_target) ** 2)
         plt.style.use("seaborn-v0_8-whitegrid")
         fig, ax = plt.subplots(figsize=(15, 6))
         plot_range = range(min(200, len(test_target)))
@@ -106,6 +120,56 @@ def main():
         print(f"Plot saved to '{output_filename}'")
 
         plt.show()
+
+    # --- 6. Save Results to CSV ---
+    results_filename = conf.experiment.benchmark_output_file
+    output_dir = os.path.dirname(results_filename)
+
+    if output_dir and not os.path.exists(output_dir):
+        print(f"Creating output directory: {output_dir}")
+        os.makedirs(output_dir)
+
+    file_exists = os.path.exists(results_filename)
+
+    if conf.experiment.use_numpy_version:
+        init_method = "numpy_pi" if conf.numpy_algos.use_power_iteration else "numpy_eigvals"
+        ridge_solver_method = "numpy_cg" if conf.numpy_algos.use_conjugate_gradient else "numpy_solve"
+        predict_method = "numpy"
+    else:
+        init_method = "taichi_pi" if conf.esn.use_taichi_init else "numpy_eigvals"
+        ridge_solver_method = "taichi_cg" if conf.solver.use_taichi_ridge else "numpy_pinv"
+        predict_method = "numpy_compute" if conf.experiment.use_numpy_predict_in_taichi else "taichi_kernel"
+
+    data_row = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "version": "numpy" if conf.experiment.use_numpy_version else "taichi",
+        "backend": "cpu" if conf.experiment.use_numpy_version else conf.taichi.backend,
+        "init_method": init_method,
+        "ridge_solver": ridge_solver_method,
+        "predict_method": predict_method,
+        "n_reservoir": conf.esn.n_reservoir,
+        "sparsity": conf.esn.sparsity,
+        "leaking_rate": conf.esn.leaking_rate,
+        "spectral_radius": conf.esn.spectral_radius,
+        "noise_amplitude": conf.data.noise_amplitude,
+        "ridge_alpha": conf.solver.ridge_alpha,
+        "cg_iterations": conf.solver.cg_iterations,
+        "init_time": f"{init_time:.5f}",
+        "fit_time": f"{fit_time:.5f}",
+        "predict_time": f"{predict_time:.5f}",
+        "total_time": f"{total_time:.5f}",
+        "mse": f"{mse:.6f}",
+    }
+
+    try:
+        with open(results_filename, "a", newline="") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=data_row.keys())
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(data_row)
+        print(f"\nBenchmark results appended to {results_filename}")
+    except IOError as e:
+        print(f"Error: Could not write to {results_filename}. Reason: {e}")
 
 
 if __name__ == "__main__":
