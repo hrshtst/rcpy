@@ -43,7 +43,7 @@ for i in $(seq 1 $NUM_RUNS); do
 
     # --- Taichi Configurations ---
     echo "  Running: Taichi (Only reservoir update)"
-    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=false solver.use_taichi_ridge=False experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
+    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=false solver.use_taichi_ridge=false experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
 
     echo "  Running: Taichi (Power iteration)"
     uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=false experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
