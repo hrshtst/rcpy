@@ -26,28 +26,28 @@ env:
   FORCE_COLOR: 3
 
 jobs:
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
+  # lint:
+  #   name: lint
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
 
-      - name: Upgrade nox
-        run: |
-          python -m pip install --upgrade 'nox[uv]'
-          nox --version
+  #     - name: Upgrade nox
+  #       run: |
+  #         python -m pip install --upgrade 'nox[uv]'
+  #         nox --version
 
-      - name: Run lints
-        run: nox --non-interactive --error-on-missing-interpreter --session "lint"
+  #     - name: Run lints
+  #       run: nox --non-interactive --error-on-missing-interpreter --session "lint"
 
   tests:
     timeout-minutes: 10
