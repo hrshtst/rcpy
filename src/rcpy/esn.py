@@ -129,15 +129,28 @@ class EchoStateNetwork:
         print(f"\nStarting training with washout period of {washout_period}...")
         n_samples = train_input.shape[0]
         collected_states = np.zeros((n_samples - washout_period, self.cfg.n_reservoir), dtype=np.float32)
-        u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
 
         print("  Collecting reservoir states...")
-        self.x.fill(0)
-        for t in range(n_samples):
-            u_ti.from_numpy(train_input[t])
-            self._update_state_kernel(u_ti)
-            if t >= washout_period:
-                collected_states[t - washout_period] = self.x.to_numpy()
+        if True:
+            W_res_np = self.W_res.to_numpy()
+            W_in_np = self.W_in.to_numpy()
+            x_np = self.x.to_numpy()
+            for t in range(n_samples):
+                u_t = train_input[t]
+                pre_activation = W_res_np @ x_np + W_in_np @ u_t
+                new_x = np.tanh(pre_activation)
+                x_np = (1 - self.cfg.leaking_rate) * x_np + self.cfg.leaking_rate * new_x
+                if t >= washout_period:
+                    collected_states[t - washout_period] = x_np
+            self.x.from_numpy(x_np)
+        else:
+            u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
+            self.x.fill(0)
+            for t in range(n_samples):
+                u_ti.from_numpy(train_input[t])
+                self._update_state_kernel(u_ti)
+                if t >= washout_period:
+                    collected_states[t - washout_period] = self.x.to_numpy()
         print("  State collection complete.")
 
         X_T = collected_states.T
