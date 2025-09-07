@@ -88,10 +88,12 @@ def main():
     if conf.experiment.use_numpy_version:
         init_method = "numpy_pi" if conf.numpy_algos.use_power_iteration else "numpy_eigvals"
         ridge_solver_method = "numpy_cg" if conf.numpy_algos.use_conjugate_gradient else "numpy_solve"
+        update_method = "numpy"
         predict_method = "numpy"
     else:
         init_method = "taichi_pi" if conf.esn.use_taichi_init else "numpy_eigvals"
         ridge_solver_method = "taichi_cg" if conf.solver.use_taichi_ridge else "numpy_pinv"
+        update_method = "numpy_compute" if conf.experiment.use_numpy_update_in_taichi else "taichi_kernel"
         predict_method = "numpy_compute" if conf.experiment.use_numpy_predict_in_taichi else "taichi_kernel"
 
     data_row = {
@@ -100,6 +102,7 @@ def main():
         "backend": "cpu" if conf.experiment.use_numpy_version else conf.taichi.backend,
         "init_method": init_method,
         "ridge_solver": ridge_solver_method,
+        "update_method": update_method,
         "predict_method": predict_method,
         "n_reservoir": conf.esn.n_reservoir,
         "sparsity": conf.esn.sparsity,
