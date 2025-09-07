@@ -131,7 +131,7 @@ class EchoStateNetwork:
         collected_states = np.zeros((n_samples - washout_period, self.cfg.n_reservoir), dtype=np.float32)
 
         print("  Collecting reservoir states...")
-        if True:
+        if conf.experiment.use_numpy_update_in_taichi:
             W_res_np = self.W_res.to_numpy()
             W_in_np = self.W_in.to_numpy()
             x_np = self.x.to_numpy()

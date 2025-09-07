@@ -8,6 +8,7 @@ class ExperimentSetup:
     """High-level experiment settings."""
 
     use_numpy_version: bool = False
+    use_numpy_update_in_taichi: bool = False
     use_numpy_predict_in_taichi: bool = False
     show_plot: bool = True
     benchmark_output_file: str = "benchmark_results.csv"
