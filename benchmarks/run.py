@@ -93,7 +93,7 @@ def main():
     else:
         init_method = "taichi_pi" if conf.esn.use_taichi_init else "numpy_eigvals"
         ridge_solver_method = "taichi_cg" if conf.solver.use_taichi_ridge else "numpy_pinv"
-        update_method = "numpy_compute" if conf.experiment.use_numpy_update_in_taichi else "taichi_kernel"
+        update_method = "numpy_update" if conf.experiment.use_numpy_update_in_taichi else "taichi_update"
         predict_method = "numpy_compute" if conf.experiment.use_numpy_predict_in_taichi else "taichi_kernel"
 
     data_row = {

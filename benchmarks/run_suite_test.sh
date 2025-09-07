@@ -15,7 +15,7 @@ SIZES=(100 200 400 800 1000 2000 4000)
 MAIN_SCRIPT="benchmarks/run.py"
 # Generate a unique, timestamped directory for this benchmark run
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_DIR="benchmarks/results/benchmark_run_final_${TIMESTAMP}"
+OUTPUT_DIR="benchmarks/results/benchmark_run_test_${TIMESTAMP}"
 # Use a consistent filename within the timestamped directory
 OUTPUT_FILE="${OUTPUT_DIR}/benchmark_results.csv"
 

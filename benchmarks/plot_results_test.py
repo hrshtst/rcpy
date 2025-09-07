@@ -37,7 +37,7 @@ def main():
         else:
             init = "PowerIter" if row["init_method"] == "taichi_pi" else "EigVals"
             solver = "CG" if row["ridge_solver"] == "taichi_cg" else "Pinv"
-            update = "TaichiUpdate" if row["update_method"] == "taichi_kernel" else "NumPyUpdate"
+            update = "TaichiUpdate" if row["update_method"] == "taichi_update" else "NumPyUpdate"
             predict = "TaichiKernel" if row["predict_method"] == "taichi_kernel" else "NumPyLoop"
             conditions.append(f"Taichi ({init}, {solver}, {update}, {predict})")
     df["Configuration"] = conditions
