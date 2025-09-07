@@ -40,8 +40,8 @@ for i in $(seq 1 $NUM_RUNS); do
     COMMON_ARGS="esn.n_reservoir=$size experiment.show_plot=false experiment.benchmark_output_file=$OUTPUT_FILE"
 
     # --- NumPy Configurations ---
-    # echo "  Running: NumPy (Standard Algos)"
-    # uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=true numpy_algos.use_power_iteration=false numpy_algos.use_conjugate_gradient=false $COMMON_ARGS
+    echo "  Running: NumPy (Standard Algos)"
+    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=true numpy_algos.use_power_iteration=false numpy_algos.use_conjugate_gradient=false $COMMON_ARGS
 
     # # --- Taichi Configurations ---
     # echo "  Running: Taichi (Only reservoir update)"
