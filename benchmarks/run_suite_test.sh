@@ -51,11 +51,17 @@ for i in $(seq 1 $NUM_RUNS); do
     # echo "  Running: Taichi (CG method)"
     # uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=true experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
 
-    echo "  Running: Taichi (NumPy Predict)"
+    echo "  Running: Taichi (Taichi Update, Taichi Predict)"
+    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=true experiment.use_numpy_update_in_taichi=false experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
+
+    echo "  Running: Taichi (Taichi Update, NumPy Predict)"
     uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=true experiment.use_numpy_update_in_taichi=false experiment.use_numpy_predict_in_taichi=true $COMMON_ARGS
 
-    echo "  Running: Taichi (NumPy Update)"
-    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=true experiment.use_numpy_update_in_taichi=true  experiment.use_numpy_predict_in_taichi=true $COMMON_ARGS
+    echo "  Running: Taichi (NumPy Update, Taichi Predict)"
+    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=true experiment.use_numpy_update_in_taichi=true experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
+
+    echo "  Running: Taichi (NumPy Update, NumPy Predict)"
+    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=true solver.use_taichi_ridge=true experiment.use_numpy_update_in_taichi=true experiment.use_numpy_predict_in_taichi=true $COMMON_ARGS
   done
 done
 
