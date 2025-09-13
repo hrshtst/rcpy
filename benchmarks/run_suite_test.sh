@@ -41,6 +41,9 @@ for i in $(seq 1 $NUM_RUNS); do
     echo "  Running: NumPy (Standard Algos)"
     uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=true numpy_algos.use_power_iteration=false numpy_algos.use_conjugate_gradient=false $COMMON_ARGS
 
+    echo "  Running: NumPy (Power iteration, CG method)"
+    uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=true numpy_algos.use_power_iteration=true numpy_algos.use_conjugate_gradient=true $COMMON_ARGS
+
     # # --- Taichi Configurations ---
     # echo "  Running: Taichi (Only reservoir update)"
     # uv run python "$MAIN_SCRIPT" experiment.use_numpy_version=false taichi.backend=gpu esn.use_taichi_init=false solver.use_taichi_ridge=false experiment.use_numpy_predict_in_taichi=false $COMMON_ARGS
