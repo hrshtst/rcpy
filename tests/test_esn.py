@@ -1,14 +1,9 @@
-import warnings
-
 import numpy as np
 import pytest
 import taichi as ti
 
 from rcpy.config import get_config
 from rcpy.esn import EchoStateNetwork, NumpyEchoStateNetwork
-
-# Ignore DeprecationWarning from external libraries like Taichi
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 @pytest.fixture

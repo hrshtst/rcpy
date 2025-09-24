@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pytest
 import taichi as ti
@@ -7,9 +5,6 @@ import taichi as ti
 # Assuming sparse_esn.py is in the rcpy module
 from rcpy.config import get_config
 from rcpy.sparse_esn import SparseEchoStateNetwork
-
-# Ignore DeprecationWarning from external libraries like Taichi
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 @pytest.fixture
