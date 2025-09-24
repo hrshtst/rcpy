@@ -1,3 +1,4 @@
+# src/rcpy/config.py
 from dataclasses import dataclass, field
 
 from omegaconf import OmegaConf
@@ -48,9 +49,14 @@ class DataConfig:
 class SolverConfig:
     """Configuration for the training solver."""
 
+    solver_type: str = "ridge"  # "ridge" or "rls"
+    # Ridge options
     use_taichi_ridge: bool = True
     ridge_alpha: float = 1e-4
     cg_iterations: int = 30
+    # RLS options
+    forgetting_factor: float = 0.98
+    delta: float = 0.001
 
 
 @dataclass

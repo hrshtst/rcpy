@@ -1,7 +1,9 @@
+# src/rcpy/esn.py
 import numpy as np
 import taichi as ti
 
 from rcpy.ridge import NumpyRidge, TaichiRidge
+from rcpy.rls import NumpyRLS, TaichiRLS
 
 
 @ti.data_oriented
@@ -156,7 +158,16 @@ class EchoStateNetwork:
         X_T = collected_states.T
         Y_T = target_data[washout_period:].T
 
-        if solver_cfg.use_taichi_ridge:
+        if solver_cfg.solver_type == "rls":
+            print("\n--- Using Taichi RLS Solver ---")
+            rls_solver = TaichiRLS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                forgetting_factor=solver_cfg.forgetting_factor,
+                delta=solver_cfg.delta,
+            )
+            w_out_np = rls_solver.fit(X_T, Y_T)
+        elif solver_cfg.use_taichi_ridge:
             print("\n--- Using Taichi Ridge Solver ---")
             ridge_solver = TaichiRidge(alpha=solver_cfg.ridge_alpha, n_iter=solver_cfg.cg_iterations)
             w_out_np = ridge_solver.fit(X_T, Y_T)
@@ -267,7 +278,16 @@ class NumpyEchoStateNetwork:
         X = collected_states
         Y = target_data[washout_period:]
 
-        if self.numpy_algos_cfg.use_conjugate_gradient:
+        if self.solver_cfg.solver_type == "rls":
+            print("\n--- Using NumPy RLS Solver ---")
+            rls_solver = NumpyRLS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                forgetting_factor=self.solver_cfg.forgetting_factor,
+                delta=self.solver_cfg.delta,
+            )
+            self.W_out = rls_solver.fit(X.T, Y.T)
+        elif self.numpy_algos_cfg.use_conjugate_gradient:
             print("\n--- Using NumPy Ridge Solver (Conjugate Gradient) ---")
             ridge_solver = NumpyRidge(alpha=self.solver_cfg.ridge_alpha, n_iter=self.solver_cfg.cg_iterations)
             self.W_out = ridge_solver.fit(X.T, Y.T)
