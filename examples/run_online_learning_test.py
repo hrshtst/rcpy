@@ -8,9 +8,9 @@ import taichi as ti
 from omegaconf import OmegaConf
 
 from rcpy.config import get_config
-from rcpy.esn import NumpyEchoStateNetwork
-from rcpy.lms import NumpyLMS
-from rcpy.rls import NumpyRLS
+from rcpy.esn import EchoStateNetwork, NumpyEchoStateNetwork
+from rcpy.lms import NumpyLMS, TaichiLMS
+from rcpy.rls import NumpyRLS, TaichiRLS
 
 
 def main():
@@ -20,12 +20,26 @@ def main():
     """
     # --- 1. Configuration ---
     parser = argparse.ArgumentParser(description="Run ESN online learning example.")
+    parser.add_argument(
+        "--plot_output_file",
+        type=str,
+        default="online_learning_adaptation.png",
+        help="Path to save the output plot PNG file.",
+    )
     args, unknown = parser.parse_known_args()
     conf = get_config()
     cli_conf = OmegaConf.from_cli(unknown)
     conf = OmegaConf.merge(conf, cli_conf)
 
-    # --- 2. Generate Data with Changing Dynamics ---
+    # --- 2. Initialize Taichi if using the Taichi version ---
+    if not conf.experiment.use_numpy_version:
+        if conf.taichi.backend.lower() == "gpu":
+            ti.init(arch=ti.gpu)
+        else:
+            ti.init(arch=ti.cpu)
+        print(f"Taichi backend initialized: {conf.taichi.backend}")
+
+    # --- 3. Generate Data with Changing Dynamics ---
     print("--- Generating Data ---")
     n_total = 4000
     n_train = 2000
@@ -45,42 +59,42 @@ def main():
     test_input = data[n_train - 1 : -1]
     test_target = data[n_train:]
 
-    # --- 3. Offline Training (Ridge) ---
+    # --- 4. Offline Training (Ridge) ---
     print("--- 1. Offline Training with Ridge ---")
-    conf.experiment.use_numpy_version = True
+
+    if conf.experiment.use_numpy_version:
+        ESN = NumpyEchoStateNetwork
+        LMS = NumpyLMS
+        RLS = NumpyRLS
+    else:
+        ESN = EchoStateNetwork
+        LMS = TaichiLMS
+        RLS = TaichiRLS
+
     conf.solver.solver_type = "ridge"
-    esn_ridge = NumpyEchoStateNetwork(conf)
+    esn_ridge = ESN(conf)
     esn_ridge.fit(train_input, train_target, conf)
 
     print("\n--- 2. Predicting with offline-trained model (no adaptation) ---")
     preds_ridge = esn_ridge.predict(test_input, conf)
 
-    # --- 4. Online Adaptation (LMS) ---
+    # --- 5. Online Adaptation (LMS) ---
     print("\n--- 3. Adapting online with LMS ---")
     esn_lms = copy.deepcopy(esn_ridge)
     esn_lms.solver_cfg.solver_type = "lms"
-    esn_lms.solver = NumpyLMS(
-        esn_lms.cfg.n_reservoir,
-        esn_lms.cfg.n_output,
-        learning_rate=0.001,  # Use a much smaller learning rate
-    )
-    esn_lms.W_out = esn_ridge.W_out.copy()  # Start with the same W_out
+    esn_lms.solver = LMS(esn_lms.cfg.n_reservoir, esn_lms.cfg.n_output, learning_rate=0.001)
+    esn_lms.W_out = esn_ridge.W_out.copy() if conf.experiment.use_numpy_version else esn_ridge.W_out.to_numpy().copy()
     preds_lms = esn_lms.predict_online(test_input, test_target)
 
-    # --- 5. Online Adaptation (RLS) ---
+    # --- 6. Online Adaptation (RLS) ---
     print("\n--- 4. Adapting online with RLS ---")
     esn_rls = copy.deepcopy(esn_ridge)
     esn_rls.solver_cfg.solver_type = "rls"
-    esn_rls.solver = NumpyRLS(
-        esn_rls.cfg.n_reservoir,
-        esn_rls.cfg.n_output,
-        forgetting_factor=0.999,  # Use a forgetting factor closer to 1
-        delta=0.1,
-    )
-    esn_rls.W_out = esn_ridge.W_out.copy()  # Start with the same W_out
+    esn_rls.solver = RLS(esn_rls.cfg.n_reservoir, esn_rls.cfg.n_output, forgetting_factor=0.999, delta=0.1)
+    esn_rls.W_out = esn_ridge.W_out.copy() if conf.experiment.use_numpy_version else esn_ridge.W_out.to_numpy().copy()
     preds_rls = esn_rls.predict_online(test_input, test_target)
 
-    # --- 6. Plot Results ---
+    # --- 7. Plot Results ---
     print("\n--- Plotting results ---")
     plt.figure(figsize=(15, 8))
     plt.plot(test_target, "k", label="True Signal", linewidth=2)
@@ -96,7 +110,10 @@ def main():
     plt.ylabel("Value", fontsize=12)
     plt.legend()
     plt.grid(True)
+    plt.ylim(-2, 2)
     plt.tight_layout()
+    plt.savefig(args.plot_output_file)
+    print(f"Plot saved to {args.plot_output_file}")
     plt.show()
 
 
