@@ -29,8 +29,12 @@ class TaichiRLS:
         for i, j in self.P:
             Px[i] += self.P[i, j] * x[j]
 
+        x_dot_Px = 0.0
+        for i in range(self.n_reservoir):
+            x_dot_Px += x[i] * Px[i]
+
         k_numerator = Px
-        k_denominator = self.forgetting_factor + x.dot(Px)
+        k_denominator = self.forgetting_factor + x_dot_Px
         k = k_numerator / k_denominator
 
         # Update output weights
@@ -40,10 +44,9 @@ class TaichiRLS:
 
         # Update inverse correlation matrix
         k_outer_Px = ti.Matrix([[k[i] * Px[j] for j in range(self.n_reservoir)] for i in range(self.n_reservoir)])
-        P_new = (1.0 / self.forgetting_factor) * (self.P - k_outer_Px)
 
         for i, j in self.P:
-            self.P[i, j] = P_new[i, j]
+            self.P[i, j] = (1.0 / self.forgetting_factor) * (self.P[i, j] - k_outer_Px[i, j])
 
     def fit(self, X_np, Y_np):
         print("  Solving for W_out using Taichi RLS...")
