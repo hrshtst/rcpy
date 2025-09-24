@@ -59,7 +59,11 @@ def main():
     print("\n--- 3. Adapting online with LMS ---")
     esn_lms = copy.deepcopy(esn_ridge)
     esn_lms.solver_cfg.solver_type = "lms"
-    esn_lms.solver = NumpyLMS(esn_lms.cfg.n_reservoir, esn_lms.cfg.n_output, learning_rate=0.01)
+    esn_lms.solver = NumpyLMS(
+        esn_lms.cfg.n_reservoir,
+        esn_lms.cfg.n_output,
+        learning_rate=0.001,  # Use a much smaller learning rate
+    )
     esn_lms.W_out = esn_ridge.W_out.copy()  # Start with the same W_out
     preds_lms = esn_lms.predict_online(test_input, test_target)
 
@@ -67,7 +71,12 @@ def main():
     print("\n--- 4. Adapting online with RLS ---")
     esn_rls = copy.deepcopy(esn_ridge)
     esn_rls.solver_cfg.solver_type = "rls"
-    esn_rls.solver = NumpyRLS(esn_rls.cfg.n_reservoir, esn_rls.cfg.n_output, forgetting_factor=0.99, delta=0.1)
+    esn_rls.solver = NumpyRLS(
+        esn_rls.cfg.n_reservoir,
+        esn_rls.cfg.n_output,
+        forgetting_factor=0.999,  # Use a forgetting factor closer to 1
+        delta=0.1,
+    )
     esn_rls.W_out = esn_ridge.W_out.copy()  # Start with the same W_out
     preds_rls = esn_rls.predict_online(test_input, test_target)
 
