@@ -16,6 +16,9 @@ class TaichiRLS:
         self.P = ti.field(dtype=ti.f32, shape=(n_reservoir, n_reservoir))
         self.P.from_numpy((1.0 / self.delta) * np.identity(n_reservoir, dtype=np.float32))
 
+        self.x_ti = ti.field(dtype=ti.f32, shape=self.n_reservoir)
+        self.y_target_ti = ti.Vector.field(self.n_output, dtype=ti.f32, shape=())
+
     @ti.kernel
     def _update_kernel(self, x: ti.template(), y_target: ti.template()):
         # Compute prediction error
@@ -48,17 +51,18 @@ class TaichiRLS:
         for i, j in self.P:
             self.P[i, j] = (1.0 / self.forgetting_factor) * (self.P[i, j] - k_outer_Px[i, j])
 
+    def update(self, x_np, y_target_np):
+        """Performs a single step of RLS update."""
+        self.x_ti.from_numpy(x_np)
+        self.y_target_ti.from_numpy(y_target_np)
+        self._update_kernel(self.x_ti, self.y_target_ti)
+
     def fit(self, X_np, Y_np):
         print("  Solving for W_out using Taichi RLS...")
         n_samples = X_np.shape[1]
 
-        x_ti = ti.field(dtype=ti.f32, shape=self.n_reservoir)
-        y_target_ti = ti.Vector.field(self.n_output, dtype=ti.f32, shape=())
-
         for t in range(n_samples):
-            x_ti.from_numpy(X_np[:, t])
-            y_target_ti.from_numpy(Y_np[:, t])
-            self._update_kernel(x_ti, y_target_ti)
+            self.update(X_np[:, t], Y_np[:, t])
 
         return self.W_out.to_numpy()
 
@@ -74,27 +78,28 @@ class NumpyRLS:
         self.W_out = np.zeros((n_output, n_reservoir), dtype=np.float32)
         self.P = (1.0 / self.delta) * np.identity(n_reservoir, dtype=np.float32)
 
+    def update(self, x_t, y_target_t):
+        """Performs a single step of RLS update."""
+        # Compute prediction error
+        y_pred_t = self.W_out @ x_t
+        e_t = y_target_t - y_pred_t
+
+        # Compute gain vector
+        Px = self.P @ x_t
+        k_denominator = self.forgetting_factor + x_t.T @ Px
+        k = Px / k_denominator
+
+        # Update output weights
+        self.W_out += np.outer(e_t, k)
+
+        # Update inverse correlation matrix
+        self.P = (1.0 / self.forgetting_factor) * (self.P - np.outer(k, Px))
+
     def fit(self, X, Y):
         print("  Solving for W_out using NumPy RLS...")
         n_samples = X.shape[1]
 
         for t in range(n_samples):
-            x_t = X[:, t]
-            y_target_t = Y[:, t]
-
-            # Compute prediction error
-            y_pred_t = self.W_out @ x_t
-            e_t = y_target_t - y_pred_t
-
-            # Compute gain vector
-            Px = self.P @ x_t
-            k_denominator = self.forgetting_factor + x_t.T @ Px
-            k = Px / k_denominator
-
-            # Update output weights
-            self.W_out += np.outer(e_t, k)
-
-            # Update inverse correlation matrix
-            self.P = (1.0 / self.forgetting_factor) * (self.P - np.outer(k, Px))
+            self.update(X[:, t], Y[:, t])
 
         return self.W_out

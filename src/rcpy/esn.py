@@ -13,6 +13,7 @@ class EchoStateNetwork:
 
     def __init__(self, conf):
         self.cfg = conf.esn
+        solver_cfg = conf.solver
 
         self.W_in = ti.field(dtype=ti.f32, shape=(self.cfg.n_reservoir, self.cfg.n_input))
         self.W_res = ti.field(dtype=ti.f32, shape=(self.cfg.n_reservoir, self.cfg.n_reservoir))
@@ -24,6 +25,29 @@ class EchoStateNetwork:
             self._initialize_weights_taichi()
         else:
             self._initialize_weights_numpy()
+
+        # --- Instantiate the solver ---
+        if solver_cfg.solver_type == "lms":
+            print("\n--- Using Taichi LMS Solver ---")
+            self.solver = TaichiLMS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                learning_rate=solver_cfg.learning_rate,
+            )
+        elif solver_cfg.solver_type == "rls":
+            print("\n--- Using Taichi RLS Solver ---")
+            self.solver = TaichiRLS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                forgetting_factor=solver_cfg.forgetting_factor,
+                delta=solver_cfg.delta,
+            )
+        elif solver_cfg.use_taichi_ridge:
+            print("\n--- Using Taichi Ridge Solver ---")
+            self.solver = TaichiRidge(alpha=solver_cfg.ridge_alpha, n_iter=solver_cfg.cg_iterations)
+        else:
+            print("\n--- Using NumPy linalg.pinv Solver ---")
+            self.solver = None  # Special case for pinv
 
     @ti.kernel
     def _generate_W_res_kernel(self):
@@ -128,7 +152,6 @@ class EchoStateNetwork:
 
     def fit(self, train_input, target_data, conf):
         washout_period = conf.data.washout_period
-        solver_cfg = conf.solver
         print(f"\nStarting training with washout period of {washout_period}...")
         n_samples = train_input.shape[0]
         collected_states = np.zeros((n_samples - washout_period, self.cfg.n_reservoir), dtype=np.float32)
@@ -159,30 +182,10 @@ class EchoStateNetwork:
         X_T = collected_states.T
         Y_T = target_data[washout_period:].T
 
-        if solver_cfg.solver_type == "lms":
-            print("\n--- Using Taichi LMS Solver ---")
-            lms_solver = TaichiLMS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                learning_rate=solver_cfg.learning_rate,
-            )
-            w_out_np = lms_solver.fit(X_T, Y_T)
-        elif solver_cfg.solver_type == "rls":
-            print("\n--- Using Taichi RLS Solver ---")
-            rls_solver = TaichiRLS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                forgetting_factor=solver_cfg.forgetting_factor,
-                delta=solver_cfg.delta,
-            )
-            w_out_np = rls_solver.fit(X_T, Y_T)
-        elif solver_cfg.use_taichi_ridge:
-            print("\n--- Using Taichi Ridge Solver ---")
-            ridge_solver = TaichiRidge(alpha=solver_cfg.ridge_alpha, n_iter=solver_cfg.cg_iterations)
-            w_out_np = ridge_solver.fit(X_T, Y_T)
-        else:
-            print("\n--- Using NumPy linalg.pinv Solver ---")
+        if self.solver is None:  # Special case for pinv
             w_out_np = (Y_T @ np.linalg.pinv(X_T)).astype(np.float32)
+        else:
+            w_out_np = self.solver.fit(X_T, Y_T)
 
         self.W_out.from_numpy(w_out_np)
         print("Training complete.")
@@ -223,6 +226,26 @@ class EchoStateNetwork:
         print("  Prediction complete.")
         return predictions
 
+    def predict_online(self, test_input, test_target):
+        """Performs online prediction and learning."""
+        n_samples = test_input.shape[0]
+        predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
+
+        u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
+
+        for t in range(n_samples):
+            u_ti.from_numpy(test_input[t])
+            self._update_state_kernel(u_ti)
+
+            # Predict
+            predictions[t] = self._get_output_kernel().to_numpy()
+
+            # Update readout
+            self.solver.update(self.x.to_numpy(), test_target[t])
+            self.W_out.from_numpy(self.solver.W_out.to_numpy())
+
+        return predictions
+
 
 class NumpyEchoStateNetwork:
     """Pure NumPy Echo State Network."""
@@ -236,6 +259,29 @@ class NumpyEchoStateNetwork:
         self.W_out = None
         self.x = np.zeros(self.cfg.n_reservoir, dtype=np.float32)
         self._initialize_weights()
+
+        # --- Instantiate the solver ---
+        if self.solver_cfg.solver_type == "lms":
+            print("\n--- Using NumPy LMS Solver ---")
+            self.solver = NumpyLMS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                learning_rate=self.solver_cfg.learning_rate,
+            )
+        elif self.solver_cfg.solver_type == "rls":
+            print("\n--- Using NumPy RLS Solver ---")
+            self.solver = NumpyRLS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                forgetting_factor=self.solver_cfg.forgetting_factor,
+                delta=self.solver_cfg.delta,
+            )
+        elif self.numpy_algos_cfg.use_conjugate_gradient:
+            print("\n--- Using NumPy Ridge Solver (Conjugate Gradient) ---")
+            self.solver = NumpyRidge(alpha=self.solver_cfg.ridge_alpha, n_iter=self.solver_cfg.cg_iterations)
+        else:
+            print("\n--- Solving for W_out using np.linalg.solve ---")
+            self.solver = None  # Special case for linalg.solve
 
     def _estimate_spectral_radius_power_iteration(self, W, n_iters=20):
         b_k = np.random.rand(W.shape[1]).astype(np.float32)
@@ -287,34 +333,14 @@ class NumpyEchoStateNetwork:
         X = collected_states
         Y = target_data[washout_period:]
 
-        if self.solver_cfg.solver_type == "lms":
-            print("\n--- Using NumPy LMS Solver ---")
-            lms_solver = NumpyLMS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                learning_rate=self.solver_cfg.learning_rate,
-            )
-            self.W_out = lms_solver.fit(X.T, Y.T)
-        elif self.solver_cfg.solver_type == "rls":
-            print("\n--- Using NumPy RLS Solver ---")
-            rls_solver = NumpyRLS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                forgetting_factor=self.solver_cfg.forgetting_factor,
-                delta=self.solver_cfg.delta,
-            )
-            self.W_out = rls_solver.fit(X.T, Y.T)
-        elif self.numpy_algos_cfg.use_conjugate_gradient:
-            print("\n--- Using NumPy Ridge Solver (Conjugate Gradient) ---")
-            ridge_solver = NumpyRidge(alpha=self.solver_cfg.ridge_alpha, n_iter=self.solver_cfg.cg_iterations)
-            self.W_out = ridge_solver.fit(X.T, Y.T)
-        else:
-            print("\n--- Solving for W_out using np.linalg.solve ---")
+        if self.solver is None:  # Special case for linalg.solve
             A = X.T @ X
             A += self.solver_cfg.ridge_alpha * np.identity(A.shape[0], dtype=np.float32)
             B = X.T @ Y
             W_out_T = np.linalg.solve(A, B)
             self.W_out = W_out_T.T
+        else:
+            self.W_out = self.solver.fit(X.T, Y.T)
 
         print("Training complete.")
 
@@ -330,4 +356,25 @@ class NumpyEchoStateNetwork:
             y_t = self.W_out @ self.x
             predictions[t] = y_t
         print("  Prediction complete.")
+        return predictions
+
+    def predict_online(self, test_input, test_target):
+        """Performs online prediction and learning."""
+        n_samples = test_input.shape[0]
+        predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
+
+        for t in range(n_samples):
+            u_t = test_input[t]
+            pre_activation = self.W_res @ self.x + self.W_in @ u_t
+            new_x = np.tanh(pre_activation)
+            self.x = (1 - self.cfg.leaking_rate) * self.x + self.cfg.leaking_rate * new_x
+
+            # Predict
+            y_t = self.W_out @ self.x
+            predictions[t] = y_t
+
+            # Update readout
+            self.solver.update(self.x, test_target[t])
+            self.W_out = self.solver.W_out
+
         return predictions
