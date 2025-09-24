@@ -49,7 +49,7 @@ class DataConfig:
 class SolverConfig:
     """Configuration for the training solver."""
 
-    solver_type: str = "ridge"  # "ridge" or "rls"
+    solver_type: str = "ridge"  # "ridge", "rls", or "lms"
     # Ridge options
     use_taichi_ridge: bool = True
     ridge_alpha: float = 1e-4
@@ -57,6 +57,8 @@ class SolverConfig:
     # RLS options
     forgetting_factor: float = 0.98
     delta: float = 0.001
+    # LMS options
+    learning_rate: float = 0.1
 
 
 @dataclass

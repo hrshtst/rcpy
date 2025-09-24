@@ -2,6 +2,7 @@
 import numpy as np
 import taichi as ti
 
+from rcpy.lms import NumpyLMS, TaichiLMS
 from rcpy.ridge import NumpyRidge, TaichiRidge
 from rcpy.rls import NumpyRLS, TaichiRLS
 
@@ -158,7 +159,15 @@ class EchoStateNetwork:
         X_T = collected_states.T
         Y_T = target_data[washout_period:].T
 
-        if solver_cfg.solver_type == "rls":
+        if solver_cfg.solver_type == "lms":
+            print("\n--- Using Taichi LMS Solver ---")
+            lms_solver = TaichiLMS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                learning_rate=solver_cfg.learning_rate,
+            )
+            w_out_np = lms_solver.fit(X_T, Y_T)
+        elif solver_cfg.solver_type == "rls":
             print("\n--- Using Taichi RLS Solver ---")
             rls_solver = TaichiRLS(
                 n_reservoir=self.cfg.n_reservoir,
@@ -278,7 +287,15 @@ class NumpyEchoStateNetwork:
         X = collected_states
         Y = target_data[washout_period:]
 
-        if self.solver_cfg.solver_type == "rls":
+        if self.solver_cfg.solver_type == "lms":
+            print("\n--- Using NumPy LMS Solver ---")
+            lms_solver = NumpyLMS(
+                n_reservoir=self.cfg.n_reservoir,
+                n_output=self.cfg.n_output,
+                learning_rate=self.solver_cfg.learning_rate,
+            )
+            self.W_out = lms_solver.fit(X.T, Y.T)
+        elif self.solver_cfg.solver_type == "rls":
             print("\n--- Using NumPy RLS Solver ---")
             rls_solver = NumpyRLS(
                 n_reservoir=self.cfg.n_reservoir,
