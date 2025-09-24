@@ -9,6 +9,7 @@ from rcpy.rls import NumpyRLS, TaichiRLS
 @pytest.fixture
 def setup_rls_test():
     """A pytest fixture for RLS solver tests."""
+    np.random.seed(0)
     X_np = np.random.rand(50, 100).astype(np.float32)
     # Create a linear relationship for Y_np
     true_W_out = np.random.rand(1, 50).astype(np.float32)

@@ -9,6 +9,7 @@ from rcpy.lms import NumpyLMS, TaichiLMS
 @pytest.fixture
 def setup_lms_test():
     """A pytest fixture for LMS solver tests."""
+    np.random.seed(0)
     X_np = np.random.rand(50, 100).astype(np.float32)
     # Create a linear relationship for Y_np
     true_W_out = np.random.rand(1, 50).astype(np.float32)

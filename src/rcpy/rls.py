@@ -22,7 +22,7 @@ class TaichiRLS:
         y_pred = ti.Vector([0.0 for _ in range(self.n_output)])
         for i, j in self.W_out:
             y_pred[i] += self.W_out[i, j] * x[j]
-        e = y_target - y_pred
+        e = y_target[None] - y_pred
 
         # Compute gain vector
         Px = ti.Vector([0.0 for _ in range(self.n_reservoir)])
@@ -50,7 +50,7 @@ class TaichiRLS:
         n_samples = X_np.shape[1]
 
         x_ti = ti.field(dtype=ti.f32, shape=self.n_reservoir)
-        y_target_ti = ti.field(dtype=ti.f32, shape=self.n_output)
+        y_target_ti = ti.Vector.field(self.n_output, dtype=ti.f32, shape=())
 
         for t in range(n_samples):
             x_ti.from_numpy(X_np[:, t])
