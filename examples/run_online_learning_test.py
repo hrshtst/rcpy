@@ -80,18 +80,24 @@ def main():
 
     # --- 5. Online Adaptation (LMS) ---
     print("\n--- 3. Adapting online with LMS ---")
-    esn_lms = copy.deepcopy(esn_ridge)
-    esn_lms.solver_cfg.solver_type = "lms"
+    esn_lms = ESN(conf)
     esn_lms.solver = LMS(esn_lms.cfg.n_reservoir, esn_lms.cfg.n_output, learning_rate=0.001)
-    esn_lms.W_out = esn_ridge.W_out.copy() if conf.experiment.use_numpy_version else esn_ridge.W_out.to_numpy().copy()
+    if conf.experiment.use_numpy_version:
+        esn_lms.W_out = esn_ridge.W_out.copy()
+    else:
+        esn_lms.W_out.from_numpy(esn_ridge.W_out.to_numpy())
+
     preds_lms = esn_lms.predict_online(test_input, test_target)
 
     # --- 6. Online Adaptation (RLS) ---
     print("\n--- 4. Adapting online with RLS ---")
-    esn_rls = copy.deepcopy(esn_ridge)
-    esn_rls.solver_cfg.solver_type = "rls"
+    esn_rls = ESN(conf)
     esn_rls.solver = RLS(esn_rls.cfg.n_reservoir, esn_rls.cfg.n_output, forgetting_factor=0.999, delta=0.1)
-    esn_rls.W_out = esn_ridge.W_out.copy() if conf.experiment.use_numpy_version else esn_ridge.W_out.to_numpy().copy()
+    if conf.experiment.use_numpy_version:
+        esn_rls.W_out = esn_ridge.W_out.copy()
+    else:
+        esn_rls.W_out.from_numpy(esn_ridge.W_out.to_numpy())
+
     preds_rls = esn_rls.predict_online(test_input, test_target)
 
     # --- 7. Plot Results ---
