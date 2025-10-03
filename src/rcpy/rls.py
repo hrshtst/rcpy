@@ -57,13 +57,14 @@ class TaichiRLS:
         self.y_target_ti.from_numpy(y_target_np)
         self._update_kernel(self.x_ti, self.y_target_ti)
 
+    def update_batch(self, X_batch_np, Y_batch_np):
+        """Performs RLS update for a mini-batch."""
+        for t in range(X_batch_np.shape[1]):
+            self.update(X_batch_np[:, t], Y_batch_np[:, t])
+
     def fit(self, X_np, Y_np):
         print("  Solving for W_out using Taichi RLS...")
-        n_samples = X_np.shape[1]
-
-        for t in range(n_samples):
-            self.update(X_np[:, t], Y_np[:, t])
-
+        self.update_batch(X_np, Y_np)
         return self.W_out.to_numpy()
 
 
@@ -95,11 +96,12 @@ class NumpyRLS:
         # Update inverse correlation matrix
         self.P = (1.0 / self.forgetting_factor) * (self.P - np.outer(k, Px))
 
+    def update_batch(self, X_batch, Y_batch):
+        """Performs RLS update for a mini-batch."""
+        for t in range(X_batch.shape[1]):
+            self.update(X_batch[:, t], Y_batch[:, t])
+
     def fit(self, X, Y):
         print("  Solving for W_out using NumPy RLS...")
-        n_samples = X.shape[1]
-
-        for t in range(n_samples):
-            self.update(X[:, t], Y[:, t])
-
+        self.update_batch(X, Y)
         return self.W_out

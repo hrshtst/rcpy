@@ -218,6 +218,11 @@ class EchoStateNetwork:
 
         u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
 
+        # Mini-batching for RLS
+        batch_size = self.solver_cfg.rls_batch_size if isinstance(self.solver, (NumpyRLS, TaichiRLS)) else 1
+        state_batch = []
+        target_batch = []
+
         for t in range(n_samples):
             u_ti.from_numpy(test_input[t])
             self._update_state_kernel(u_ti)
@@ -225,9 +230,15 @@ class EchoStateNetwork:
             # Predict
             predictions[t] = self._get_output_kernel().to_numpy()
 
-            # Update readout
-            self.solver.update(self.x.to_numpy(), test_target[t])
-            self.W_out.from_numpy(self.solver.W_out.to_numpy())
+            state_batch.append(self.x.to_numpy())
+            target_batch.append(test_target[t])
+
+            if len(state_batch) >= batch_size or t == n_samples - 1:
+                X_batch_np = np.array(state_batch).T
+                Y_batch_np = np.array(target_batch).T
+                self.solver.update_batch(X_batch_np, Y_batch_np)
+                self.W_out.from_numpy(self.solver.W_out.to_numpy())
+                state_batch, target_batch = [], []
 
         return predictions
 
@@ -333,6 +344,10 @@ class NumpyEchoStateNetwork:
         n_samples = test_input.shape[0]
         predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
 
+        batch_size = self.solver_cfg.rls_batch_size if isinstance(self.solver, NumpyRLS) else 1
+        state_batch = []
+        target_batch = []
+
         for t in range(n_samples):
             u_t = test_input[t]
             pre_activation = self.W_res @ self.x + self.W_in @ u_t
@@ -343,8 +358,14 @@ class NumpyEchoStateNetwork:
             y_t = self.W_out @ self.x
             predictions[t] = y_t
 
-            # Update readout
-            self.solver.update(self.x, test_target[t])
-            self.W_out = self.solver.W_out
+            state_batch.append(self.x)
+            target_batch.append(test_target[t])
+
+            if len(state_batch) >= batch_size or t == n_samples - 1:
+                X_batch = np.array(state_batch).T
+                Y_batch = np.array(target_batch).T
+                self.solver.update_batch(X_batch, Y_batch)
+                self.W_out = self.solver.W_out
+                state_batch, target_batch = [], []
 
         return predictions

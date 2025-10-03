@@ -57,6 +57,7 @@ class SolverConfig:
     # RLS options
     forgetting_factor: float = 0.98
     delta: float = 0.001
+    rls_batch_size: int = 32
     # LMS options
     learning_rate: float = 0.1
 
