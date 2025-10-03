@@ -11,9 +11,10 @@ from rcpy.rls import NumpyRLS, TaichiRLS
 class EchoStateNetwork:
     """Taichi-accelerated Echo State Network."""
 
-    def __init__(self, conf):
+    def __init__(self, conf, solver=None):
         self.cfg = conf.esn
-        solver_cfg = conf.solver
+        self.solver_cfg = conf.solver
+        self.solver = solver
 
         self.W_in = ti.field(dtype=ti.f32, shape=(self.cfg.n_reservoir, self.cfg.n_input))
         self.W_res = ti.field(dtype=ti.f32, shape=(self.cfg.n_reservoir, self.cfg.n_reservoir))
@@ -26,28 +27,12 @@ class EchoStateNetwork:
         else:
             self._initialize_weights_numpy()
 
-        # --- Instantiate the solver ---
-        if solver_cfg.solver_type == "lms":
-            print("\n--- Using Taichi LMS Solver ---")
-            self.solver = TaichiLMS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                learning_rate=solver_cfg.learning_rate,
-            )
-        elif solver_cfg.solver_type == "rls":
-            print("\n--- Using Taichi RLS Solver ---")
-            self.solver = TaichiRLS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                forgetting_factor=solver_cfg.forgetting_factor,
-                delta=solver_cfg.delta,
-            )
-        elif solver_cfg.use_taichi_ridge:
-            print("\n--- Using Taichi Ridge Solver ---")
-            self.solver = TaichiRidge(alpha=solver_cfg.ridge_alpha, n_iter=solver_cfg.cg_iterations)
-        else:
-            print("\n--- Using NumPy linalg.pinv Solver ---")
-            self.solver = None  # Special case for pinv
+        if self.solver is None:
+            if self.solver_cfg.use_taichi_ridge:
+                print("\n--- Using Taichi Ridge Solver ---")
+                self.solver = TaichiRidge(alpha=self.solver_cfg.ridge_alpha, n_iter=self.solver_cfg.cg_iterations)
+            else:
+                print("\n--- Using NumPy linalg.pinv Solver ---")
 
     @ti.kernel
     def _generate_W_res_kernel(self):
@@ -250,38 +235,23 @@ class EchoStateNetwork:
 class NumpyEchoStateNetwork:
     """Pure NumPy Echo State Network."""
 
-    def __init__(self, conf):
+    def __init__(self, conf, solver=None):
         self.cfg = conf.esn
         self.solver_cfg = conf.solver
         self.numpy_algos_cfg = conf.numpy_algos
+        self.solver = solver
         self.W_in = None
         self.W_res = None
         self.W_out = None
         self.x = np.zeros(self.cfg.n_reservoir, dtype=np.float32)
         self._initialize_weights()
 
-        # --- Instantiate the solver ---
-        if self.solver_cfg.solver_type == "lms":
-            print("\n--- Using NumPy LMS Solver ---")
-            self.solver = NumpyLMS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                learning_rate=self.solver_cfg.learning_rate,
-            )
-        elif self.solver_cfg.solver_type == "rls":
-            print("\n--- Using NumPy RLS Solver ---")
-            self.solver = NumpyRLS(
-                n_reservoir=self.cfg.n_reservoir,
-                n_output=self.cfg.n_output,
-                forgetting_factor=self.solver_cfg.forgetting_factor,
-                delta=self.solver_cfg.delta,
-            )
-        elif self.numpy_algos_cfg.use_conjugate_gradient:
-            print("\n--- Using NumPy Ridge Solver (Conjugate Gradient) ---")
-            self.solver = NumpyRidge(alpha=self.solver_cfg.ridge_alpha, n_iter=self.solver_cfg.cg_iterations)
-        else:
-            print("\n--- Solving for W_out using np.linalg.solve ---")
-            self.solver = None  # Special case for linalg.solve
+        if self.solver is None:
+            if self.numpy_algos_cfg.use_conjugate_gradient:
+                print("\n--- Using NumPy Ridge Solver (Conjugate Gradient) ---")
+                self.solver = NumpyRidge(alpha=self.solver_cfg.ridge_alpha, n_iter=self.solver_cfg.cg_iterations)
+            else:
+                print("\n--- Solving for W_out using np.linalg.solve ---")
 
     def _estimate_spectral_radius_power_iteration(self, W, n_iters=20):
         b_k = np.random.rand(W.shape[1]).astype(np.float32)

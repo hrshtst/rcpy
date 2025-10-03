@@ -71,7 +71,6 @@ def main():
         LMS = TaichiLMS
         RLS = TaichiRLS
 
-    conf.solver.solver_type = "ridge"
     esn_ridge = ESN(conf)
     esn_ridge.fit(train_input, train_target, conf)
 
@@ -80,24 +79,22 @@ def main():
 
     # --- 5. Online Adaptation (LMS) ---
     print("\n--- 3. Adapting online with LMS ---")
-    esn_lms = ESN(conf)
-    esn_lms.solver = LMS(esn_lms.cfg.n_reservoir, esn_lms.cfg.n_output, learning_rate=0.001)
+    lms_solver = LMS(conf.esn.n_reservoir, conf.esn.n_output, learning_rate=0.001)
+    esn_lms = ESN(conf, solver=lms_solver)
     if conf.experiment.use_numpy_version:
         esn_lms.W_out = esn_ridge.W_out.copy()
     else:
         esn_lms.W_out.from_numpy(esn_ridge.W_out.to_numpy())
-
     preds_lms = esn_lms.predict_online(test_input, test_target)
 
     # --- 6. Online Adaptation (RLS) ---
     print("\n--- 4. Adapting online with RLS ---")
-    esn_rls = ESN(conf)
-    esn_rls.solver = RLS(esn_rls.cfg.n_reservoir, esn_rls.cfg.n_output, forgetting_factor=0.999, delta=0.1)
+    rls_solver = RLS(conf.esn.n_reservoir, conf.esn.n_output, forgetting_factor=0.999, delta=0.1)
+    esn_rls = ESN(conf, solver=rls_solver)
     if conf.experiment.use_numpy_version:
         esn_rls.W_out = esn_ridge.W_out.copy()
     else:
         esn_rls.W_out.from_numpy(esn_ridge.W_out.to_numpy())
-
     preds_rls = esn_rls.predict_online(test_input, test_target)
 
     # --- 7. Plot Results ---
