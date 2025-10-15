@@ -35,10 +35,8 @@ class TaichiRidge:
         for i in self.r_vec:
             rs_old += self.r_vec[i] * self.r_vec[i]
 
-        if ti.sqrt(rs_old) < 1e-9:
-            return
-
         # Main CG loop
+        # The early return has been removed to fix the Taichi syntax error.
         for _ in range(self.n_iter):
             self.Ap_vec.fill(0)
             for i, j in self.A:
@@ -48,7 +46,8 @@ class TaichiRidge:
             for i in self.p_vec:
                 pAp += self.p_vec[i] * self.Ap_vec[i]
 
-            alpha_k = rs_old / pAp if pAp != 0 else 0.0
+            # Add a small epsilon to avoid division by zero
+            alpha_k = rs_old / (pAp + 1e-9)
 
             for i in self.x_vec:
                 self.x_vec[i] += alpha_k * self.p_vec[i]
@@ -61,7 +60,7 @@ class TaichiRidge:
             if ti.sqrt(rs_new) < 1e-9:
                 break
 
-            beta = rs_new / rs_old
+            beta = rs_new / (rs_old + 1e-9)
             for i in self.p_vec:
                 self.p_vec[i] = self.r_vec[i] + beta * self.p_vec[i]
             rs_old = rs_new
