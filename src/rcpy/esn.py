@@ -135,34 +135,37 @@ class EchoStateNetwork:
                 output[i] += self.W_out[i, j] * self.x[j]
         return output
 
+    @ti.kernel
+    def _fit_kernel(self, train_input: ti.types.ndarray(), collected_states: ti.types.ndarray(), washout_period: int):
+        for t in range(train_input.shape[0]):
+            pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=ti.f32)
+            # Apply input weights
+            for i in range(self.cfg.n_reservoir):
+                for j in range(self.cfg.n_input):
+                    pre_activation[i] += self.W_in[i, j] * train_input[t, j]
+
+            # Apply reservoir weights
+            for i in range(self.cfg.n_reservoir):
+                for j in range(self.cfg.n_reservoir):
+                    pre_activation[i] += self.W_res[i, j] * self.x[j]
+
+            # Update reservoir state
+            for i in range(self.cfg.n_reservoir):
+                new_x_i = ti.tanh(pre_activation[i])
+                self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
+
+            if t >= washout_period:
+                for i in range(self.cfg.n_reservoir):
+                    collected_states[t - washout_period, i] = self.x[i]
+
     def fit(self, train_input, target_data, conf):
         washout_period = conf.data.washout_period
         print(f"\nStarting training with washout period of {washout_period}...")
         n_samples = train_input.shape[0]
         collected_states = np.zeros((n_samples - washout_period, self.cfg.n_reservoir), dtype=np.float32)
 
-        print("  Collecting reservoir states...")
-        if conf.experiment.use_numpy_update_in_taichi:
-            W_res_np = self.W_res.to_numpy()
-            W_in_np = self.W_in.to_numpy()
-            x_np = self.x.to_numpy()
-            for t in range(n_samples):
-                u_t = train_input[t]
-                pre_activation = W_res_np @ x_np + W_in_np @ u_t
-                new_x = np.tanh(pre_activation)
-                x_np = (1 - self.cfg.leaking_rate) * x_np + self.cfg.leaking_rate * new_x
-                if t >= washout_period:
-                    collected_states[t - washout_period] = x_np
-            self.x.from_numpy(x_np)
-        else:
-            u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
-            self.x.fill(0)
-            for t in range(n_samples):
-                u_ti.from_numpy(train_input[t])
-                self._update_state_kernel(u_ti)
-                if t >= washout_period:
-                    collected_states[t - washout_period] = self.x.to_numpy()
-        print("  State collection complete.")
+        self.x.fill(0)
+        self._fit_kernel(train_input, collected_states, washout_period)
 
         X_T = collected_states.T
         Y_T = target_data[washout_period:].T
@@ -175,38 +178,40 @@ class EchoStateNetwork:
         self.W_out.from_numpy(w_out_np)
         print("Training complete.")
 
+    @ti.kernel
+    def _predict_kernel(self, test_data: ti.types.ndarray(), predictions: ti.types.ndarray()):
+        for t in range(test_data.shape[0]):
+            pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=ti.f32)
+            # Apply input weights
+            for i in range(self.cfg.n_reservoir):
+                for j in range(self.cfg.n_input):
+                    pre_activation[i] += self.W_in[i, j] * test_data[t, j]
+
+            # Apply reservoir weights
+            for i in range(self.cfg.n_reservoir):
+                for j in range(self.cfg.n_reservoir):
+                    pre_activation[i] += self.W_res[i, j] * self.x[j]
+
+            # Update reservoir state
+            for i in range(self.cfg.n_reservoir):
+                new_x_i = ti.tanh(pre_activation[i])
+                self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
+
+            # Compute output
+            output = ti.Vector([0.0 for _ in range(self.cfg.n_output)], dt=ti.f32)
+            for i in range(self.cfg.n_output):
+                for j in range(self.cfg.n_reservoir):
+                    output[i] += self.W_out[i, j] * self.x[j]
+
+            for i in range(self.cfg.n_output):
+                predictions[t, i] = output[i]
+
     def predict(self, test_data, conf):
         n_samples = test_data.shape[0]
         predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
 
-        if conf.experiment.use_numpy_predict_in_taichi:
-            # --- NumPy compute path ---
-            print(f"\nStarting prediction (Taichi class, NumPy compute)...")
-            # Convert Taichi fields to NumPy arrays for computation
-            W_res_np = self.W_res.to_numpy()
-            W_in_np = self.W_in.to_numpy()
-            W_out_np = self.W_out.to_numpy()
-            x_np = self.x.to_numpy()
-
-            for t in range(n_samples):
-                u_t = test_data[t]
-                pre_activation = W_res_np @ x_np + W_in_np @ u_t
-                new_x = np.tanh(pre_activation)
-                x_np = (1 - self.cfg.leaking_rate) * x_np + self.cfg.leaking_rate * new_x
-                y_t = W_out_np @ x_np
-                predictions[t] = y_t
-
-            # Update the internal Taichi state to match the final NumPy state
-            self.x.from_numpy(x_np)
-
-        else:
-            # --- Taichi compute path ---
-            print(f"\nStarting prediction (Taichi Kernel-per-step)...")
-            u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
-            for t in range(n_samples):
-                u_ti.from_numpy(test_data[t])
-                self._update_state_kernel(u_ti)
-                predictions[t] = self._get_output_kernel().to_numpy()
+        print(f"\nStarting prediction (Taichi)...")
+        self._predict_kernel(test_data, predictions)
 
         print("  Prediction complete.")
         return predictions

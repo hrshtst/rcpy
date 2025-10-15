@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse
 import taichi as ti
 
-from rcpy.ridge import TaichiRidge  # Use the original dense solver
+from rcpy.ridge import TaichiRidge
 
 
 @ti.data_oriented
@@ -119,31 +119,30 @@ class SparseEchoStateNetwork:
         print("Initialization complete.")
 
     @ti.kernel
-    def _update_state_kernel(self, u_t: ti.template()):
-        # CORRECTED: Use a local Taichi vector, not a new field
-        pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
+    def _fit_kernel(self, train_input: ti.types.ndarray(), collected_states: ti.types.ndarray(), washout_period: int):
+        for t in range(train_input.shape[0]):
+            pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
 
-        for i in range(self.W_res_rows.shape[0]):
-            row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
-            pre_activation[row] += val * self.x[col]
+            # Sparse reservoir update
+            for i in range(self.W_res_rows.shape[0]):
+                row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
+                pre_activation[row] += val * self.x[col]
 
-        for i in range(self.cfg.n_reservoir):
-            in_val = 0.0
-            for j in range(self.cfg.n_input):
-                in_val += self.W_in[i, j] * u_t[j]
-            pre_activation[i] += in_val
+            # Input update
+            for i in range(self.cfg.n_reservoir):
+                in_val = 0.0
+                for j in range(self.cfg.n_input):
+                    in_val += self.W_in[i, j] * train_input[t, j]
+                pre_activation[i] += in_val
 
-        for i in range(self.cfg.n_reservoir):
-            new_x_i = ti.tanh(pre_activation[i])
-            self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
+            # Leaky integration
+            for i in range(self.cfg.n_reservoir):
+                new_x_i = ti.tanh(pre_activation[i])
+                self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
 
-    @ti.kernel
-    def _get_output_kernel(self) -> ti.types.vector(1, ti.f32):
-        output = ti.Vector([0.0 for _ in range(self.cfg.n_output)], dt=self.dtype)
-        for i in range(self.cfg.n_output):
-            for j in range(self.cfg.n_reservoir):
-                output[i] += self.W_out[i, j] * self.x[j]
-        return output
+            if t >= washout_period:
+                for i in range(self.cfg.n_reservoir):
+                    collected_states[t - washout_period, i] = self.x[i]
 
     def fit(self, train_input, target_data, conf):
         washout_period = conf.data.washout_period
@@ -152,15 +151,10 @@ class SparseEchoStateNetwork:
 
         n_samples = train_input.shape[0]
         collected_states = np.zeros((n_samples - washout_period, self.cfg.n_reservoir), dtype=np.float32)
-        u_ti = ti.field(dtype=self.dtype, shape=self.cfg.n_input)
 
-        print("  Collecting reservoir states...")
         self.x.fill(0)
-        for t in range(n_samples):
-            u_ti.from_numpy(train_input[t])
-            self._update_state_kernel(u_ti)
-            if t >= washout_period:
-                collected_states[t - washout_period] = self.x.to_numpy()
+        self._fit_kernel(train_input, collected_states, washout_period)
+
         print("  State collection complete.")
 
         X_T = collected_states.T
@@ -173,16 +167,43 @@ class SparseEchoStateNetwork:
         self.W_out.from_numpy(w_out_np)
         print("Training complete.")
 
+    @ti.kernel
+    def _predict_kernel(self, test_data: ti.types.ndarray(), predictions: ti.types.ndarray()):
+        for t in range(test_data.shape[0]):
+            pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
+
+            # Sparse reservoir update
+            for i in range(self.W_res_rows.shape[0]):
+                row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
+                pre_activation[row] += val * self.x[col]
+
+            # Input update
+            for i in range(self.cfg.n_reservoir):
+                in_val = 0.0
+                for j in range(self.cfg.n_input):
+                    in_val += self.W_in[i, j] * test_data[t, j]
+                pre_activation[i] += in_val
+
+            # Leaky integration
+            for i in range(self.cfg.n_reservoir):
+                new_x_i = ti.tanh(pre_activation[i])
+                self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
+
+            # Output
+            output = ti.Vector([0.0 for _ in range(self.cfg.n_output)], dt=self.dtype)
+            for i in range(self.cfg.n_output):
+                for j in range(self.cfg.n_reservoir):
+                    output[i] += self.W_out[i, j] * self.x[j]
+
+            for i in range(self.cfg.n_output):
+                predictions[t, i] = output[i]
+
     def predict(self, test_data, conf):
         n_samples = test_data.shape[0]
         predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
 
         print(f"\nStarting prediction (Sparse Taichi ESN)...")
-        u_ti = ti.field(dtype=self.dtype, shape=self.cfg.n_input)
-        for t in range(n_samples):
-            u_ti.from_numpy(test_data[t])
-            self._update_state_kernel(u_ti)
-            predictions[t] = self._get_output_kernel().to_numpy()
+        self._predict_kernel(test_data, predictions)
 
         print("  Prediction complete.")
         return predictions

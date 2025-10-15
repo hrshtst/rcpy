@@ -14,6 +14,7 @@ class TaichiRidge:
     @ti.kernel
     def _compute_A(self, X: ti.template()):
         n_res, n_samples = X.shape
+        # This is equivalent to A = X @ X.T
         for i, j in self.A:
             sum_val = 0.0
             for k in range(n_samples):
@@ -23,51 +24,46 @@ class TaichiRidge:
             self.A[i, i] += self.alpha
 
     @ti.kernel
-    def _mat_vec_mul(self):
-        for i, j in self.A:
-            ti.atomic_add(self.Ap_vec[i], self.A[i, j] * self.p_vec[j])
-
-    @ti.kernel
-    def _dot(self, v1: ti.template(), v2: ti.template()) -> ti.f32:
-        result = 0.0
-        for i in v1:
-            result += v1[i] * v2[i]
-        return result
-
-    @ti.kernel
-    def _axpy(self, scale: ti.f32, vec_to_add: ti.template(), vec_to_update: ti.template()):
-        for i in vec_to_update:
-            vec_to_update[i] += scale * vec_to_add[i]
-
-    @ti.kernel
-    def _copy(self, src: ti.template(), dest: ti.template()):
-        for i in src:
-            dest[i] = src[i]
-
-    @ti.kernel
-    def _update_p_kernel(self, beta: ti.f32):
-        for i in self.p_vec:
-            self.p_vec[i] = self.r_vec[i] + beta * self.p_vec[i]
-
-    def _solve_cg(self, b_vec: ti.template()):
+    def _solve_cg_kernel(self, b_vec: ti.template()):
+        # Initialize
         self.x_vec.fill(0)
-        self._copy(b_vec, self.r_vec)
-        self._copy(b_vec, self.p_vec)
-        rs_old = self._dot(self.r_vec, self.r_vec)
+        for i in self.r_vec:
+            self.r_vec[i] = b_vec[i]
+            self.p_vec[i] = b_vec[i]
+
+        rs_old = 0.0
+        for i in self.r_vec:
+            rs_old += self.r_vec[i] * self.r_vec[i]
+
         if ti.sqrt(rs_old) < 1e-9:
             return
+
+        # Main CG loop
         for _ in range(self.n_iter):
             self.Ap_vec.fill(0)
-            self._mat_vec_mul()
-            pAp = self._dot(self.p_vec, self.Ap_vec)
+            for i, j in self.A:
+                ti.atomic_add(self.Ap_vec[i], self.A[i, j] * self.p_vec[j])
+
+            pAp = 0.0
+            for i in self.p_vec:
+                pAp += self.p_vec[i] * self.Ap_vec[i]
+
             alpha_k = rs_old / pAp if pAp != 0 else 0.0
-            self._axpy(alpha_k, self.p_vec, self.x_vec)
-            self._axpy(-alpha_k, self.Ap_vec, self.r_vec)
-            rs_new = self._dot(self.r_vec, self.r_vec)
+
+            for i in self.x_vec:
+                self.x_vec[i] += alpha_k * self.p_vec[i]
+                self.r_vec[i] -= alpha_k * self.Ap_vec[i]
+
+            rs_new = 0.0
+            for i in self.r_vec:
+                rs_new += self.r_vec[i] * self.r_vec[i]
+
             if ti.sqrt(rs_new) < 1e-9:
                 break
+
             beta = rs_new / rs_old
-            self._update_p_kernel(beta)
+            for i in self.p_vec:
+                self.p_vec[i] = self.r_vec[i] + beta * self.p_vec[i]
             rs_old = rs_new
 
     def fit(self, X_np, Y_np):
@@ -87,7 +83,7 @@ class TaichiRidge:
         print(f"  Solving for W_out using Conjugate Gradient ({self.n_iter} iterations)...")
         for j in range(n_output):
             b_vec.from_numpy(B_np[:, j])
-            self._solve_cg(b_vec)
+            self._solve_cg_kernel(b_vec)
             W_out_np[j, :] = self.x_vec.to_numpy()
         return W_out_np
 
