@@ -22,9 +22,12 @@ class SparseEchoStateNetwork:
         self.x = ti.field(dtype=self.dtype, shape=self.cfg.n_reservoir)
 
         # Fields for sparse reservoir matrix in COO format
-        self.W_res_rows = None
-        self.W_res_cols = None
-        self.W_res_vals = None
+        self.W_res_rows = ti.field(dtype=ti.i32)
+        self.W_res_cols = ti.field(dtype=ti.i32)
+        self.W_res_vals = ti.field(dtype=self.dtype)
+
+        # Helper field for sparse operations
+        self.pre_activation = ti.field(dtype=self.dtype, shape=self.cfg.n_reservoir)
 
         self._initialize_weights()
 
@@ -101,9 +104,7 @@ class SparseEchoStateNetwork:
         )
         w_res_scipy.data = (w_res_scipy.data * 2) - 1
 
-        self.W_res_rows = ti.field(dtype=ti.i32, shape=w_res_scipy.nnz)
-        self.W_res_cols = ti.field(dtype=ti.i32, shape=w_res_scipy.nnz)
-        self.W_res_vals = ti.field(dtype=self.dtype, shape=w_res_scipy.nnz)
+        ti.root.dense(ti.i, w_res_scipy.nnz).place(self.W_res_rows, self.W_res_cols, self.W_res_vals)
         self.W_res_rows.from_numpy(w_res_scipy.row.astype(np.int32))
         self.W_res_cols.from_numpy(w_res_scipy.col.astype(np.int32))
         self.W_res_vals.from_numpy(w_res_scipy.data)
@@ -119,30 +120,29 @@ class SparseEchoStateNetwork:
         print("Initialization complete.")
 
     @ti.kernel
-    def _update_state_kernel(self, u_t: ti.template()):
-        pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
-
+    def _update_state_kernel(self, u: ti.template(), t: int):
+        self.pre_activation.fill(0)
         for i in range(self.W_res_rows.shape[0]):
             row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
-            pre_activation[row] += val * self.x[col]
+            self.pre_activation[row] += val * self.x[col]
 
         for i in range(self.cfg.n_reservoir):
             in_val = 0.0
             for j in ti.static(range(self.cfg.n_input)):
-                in_val += self.W_in[i, j] * u_t[j]
-            pre_activation[i] += in_val
+                in_val += self.W_in[i, j] * u[t, j]
+            self.pre_activation[i] += in_val
 
         for i in range(self.cfg.n_reservoir):
-            new_x_i = ti.tanh(pre_activation[i])
+            new_x_i = ti.tanh(self.pre_activation[i])
             self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
 
     @ti.kernel
-    def _get_output_kernel(self) -> ti.types.vector(1, ti.f32):
-        output = ti.Vector([0.0 for _ in range(self.cfg.n_output)], dt=self.dtype)
+    def _get_output_kernel(self, predictions: ti.template(), t: int):
         for i in ti.static(range(self.cfg.n_output)):
+            out = 0.0
             for j in range(self.cfg.n_reservoir):
-                output[i] += self.W_out[i, j] * self.x[j]
-        return output
+                out += self.W_out[i, j] * self.x[j]
+            predictions[t, i] = out
 
     def fit(self, train_input, target_data, conf):
         washout_period = conf.data.washout_period
@@ -158,8 +158,7 @@ class SparseEchoStateNetwork:
         print("  Collecting reservoir states...")
         self.x.fill(0)
         for t in range(n_samples):
-            u_t = ti.Vector([train_input_ti[t, i] for i in ti.static(range(self.cfg.n_input))])
-            self._update_state_kernel(u_t)
+            self._update_state_kernel(train_input_ti, t)
             if t >= washout_period:
                 collected_states[t - washout_period] = self.x.to_numpy()
         print("  State collection complete.")
@@ -176,16 +175,14 @@ class SparseEchoStateNetwork:
 
     def predict(self, test_data, conf):
         n_samples = test_data.shape[0]
-        predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
-
+        predictions_ti = ti.field(dtype=self.dtype, shape=(n_samples, self.cfg.n_output))
         test_data_ti = ti.field(dtype=self.dtype, shape=test_data.shape)
         test_data_ti.from_numpy(test_data.astype(np.float32))
 
         print(f"\nStarting prediction (Sparse Taichi ESN)...")
         for t in range(n_samples):
-            u_t = ti.Vector([test_data_ti[t, i] for i in ti.static(range(self.cfg.n_input))])
-            self._update_state_kernel(u_t)
-            predictions[t] = self._get_output_kernel().to_numpy()
+            self._update_state_kernel(test_data_ti, t)
+            self._get_output_kernel(predictions_ti, t)
 
         print("  Prediction complete.")
-        return predictions
+        return predictions_ti.to_numpy()

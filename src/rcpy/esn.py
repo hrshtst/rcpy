@@ -86,7 +86,7 @@ class EchoStateNetwork:
 
     def _initialize_weights_taichi(self):
         print("Initializing ESN weights using Taichi...")
-        w_in_np = (np.random.rand(self.cfg.n_reservoir, self.cfg.n_input) - 0.5).astype(np.float32)
+        w_in_np = (np.random.rand(self.cfg.n_reservoir, self.cfg.n_input) * 2 - 1).astype(np.float32)
         self.W_in.from_numpy(w_in_np)
         print("  Generating W_res on device...")
         self._generate_W_res_kernel()
@@ -100,13 +100,13 @@ class EchoStateNetwork:
     def _initialize_weights_numpy(self):
         """Initializes weights using NumPy (can be slow for large reservoirs)."""
         print("Initializing ESN weights using NumPy...")
-        w_in_np = (np.random.rand(self.cfg.n_reservoir, self.cfg.n_input) - 0.5).astype(np.float32)
+        w_in_np = (np.random.rand(self.cfg.n_reservoir, self.cfg.n_input) * 2 - 1).astype(np.float32)
         self.W_in.from_numpy(w_in_np)
 
         w_res_np = (np.random.rand(self.cfg.n_reservoir, self.cfg.n_reservoir) - 0.5).astype(np.float32)
         w_res_np[np.random.rand(*w_res_np.shape) > self.cfg.sparsity] = 0.0
 
-        print("  Calculating spectral radius with np.linalg.eigvals (can be slow)...")
+        print("  Calculating spectral radius with np.linalg.eigvals...")
         eigenvalues = np.linalg.eigvals(w_res_np)
         current_spectral_radius = np.max(np.abs(eigenvalues))
 
@@ -117,24 +117,24 @@ class EchoStateNetwork:
         print("Initialization complete.")
 
     @ti.kernel
-    def _update_state_kernel(self, u_t: ti.template()):
+    def _update_state_kernel(self, u: ti.template(), t: int):
         pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
         for i, j in self.W_res:
             pre_activation[i] += self.W_res[i, j] * self.x[j]
         for i in range(self.cfg.n_reservoir):
             for j in ti.static(range(self.cfg.n_input)):
-                pre_activation[i] += self.W_in[i, j] * u_t[j]
+                pre_activation[i] += self.W_in[i, j] * u[t, j]
         for i in range(self.cfg.n_reservoir):
             new_x_i = ti.tanh(pre_activation[i])
             self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
 
     @ti.kernel
-    def _get_output_kernel(self) -> ti.types.vector(1, ti.f32):
-        output = ti.Vector([0.0 for _ in range(self.cfg.n_output)], dt=self.dtype)
+    def _get_output_kernel(self, predictions: ti.template(), t: int):
         for i in ti.static(range(self.cfg.n_output)):
+            out = 0.0
             for j in range(self.cfg.n_reservoir):
-                output[i] += self.W_out[i, j] * self.x[j]
-        return output
+                out += self.W_out[i, j] * self.x[j]
+            predictions[t, i] = out
 
     def fit(self, train_input, target_data, conf):
         washout_period = conf.data.washout_period
@@ -148,8 +148,7 @@ class EchoStateNetwork:
 
         self.x.fill(0)
         for t in range(n_samples):
-            u_t = ti.Vector([train_input_ti[t, i] for i in ti.static(range(self.cfg.n_input))])
-            self._update_state_kernel(u_t)
+            self._update_state_kernel(train_input_ti, t)
             if t >= washout_period:
                 collected_states[t - washout_period] = self.x.to_numpy()
         print("  State collection complete.")
@@ -167,26 +166,26 @@ class EchoStateNetwork:
 
     def predict(self, test_data, conf):
         n_samples = test_data.shape[0]
-        predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
-
+        predictions_ti = ti.field(dtype=self.dtype, shape=(n_samples, self.cfg.n_output))
         test_data_ti = ti.field(dtype=self.dtype, shape=test_data.shape)
         test_data_ti.from_numpy(test_data.astype(np.float32))
 
         print(f"\nStarting prediction (Taichi ESN)...")
         for t in range(n_samples):
-            u_t = ti.Vector([test_data_ti[t, i] for i in ti.static(range(self.cfg.n_input))])
-            self._update_state_kernel(u_t)
-            predictions[t] = self._get_output_kernel().to_numpy()
+            self._update_state_kernel(test_data_ti, t)
+            self._get_output_kernel(predictions_ti, t)
 
         print("  Prediction complete.")
-        return predictions
+        return predictions_ti.to_numpy()
 
     def predict_online(self, test_input, test_target):
         """Performs online prediction and learning."""
         n_samples = test_input.shape[0]
         predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
 
-        u_ti = ti.field(dtype=ti.f32, shape=self.cfg.n_input)
+        test_input_ti = ti.field(dtype=self.dtype, shape=test_input.shape)
+        test_input_ti.from_numpy(test_input.astype(np.float32))
+        predictions_ti = ti.field(dtype=self.dtype, shape=predictions.shape)
 
         # Mini-batching for RLS
         batch_size = self.solver_cfg.rls_batch_size if isinstance(self.solver, (NumpyRLS, TaichiRLS)) else 1
@@ -194,16 +193,8 @@ class EchoStateNetwork:
         target_batch = []
 
         for t in range(n_samples):
-            u_ti.from_numpy(test_input[t])
-            # This part is not optimized as it is for online learning
-            # and the performance bottleneck is likely in the solver update.
-            # a kernel per step is acceptable here.
-            pre_activation = self.W_res @ self.x + self.W_in @ u_ti
-            new_x = np.tanh(pre_activation)
-            self.x = (1 - self.cfg.leaking_rate) * self.x + self.cfg.leaking_rate * new_x
-
-            # Predict
-            predictions[t] = (self.W_out @ self.x).to_numpy()
+            self._update_state_kernel(test_input_ti, t)
+            self._get_output_kernel(predictions_ti, t)
 
             state_batch.append(self.x.to_numpy())
             target_batch.append(test_target[t])
@@ -215,7 +206,7 @@ class EchoStateNetwork:
                 self.W_out.from_numpy(self.solver.W_out.to_numpy())
                 state_batch, target_batch = [], []
 
-        return predictions
+        return predictions_ti.to_numpy()
 
 
 class NumpyEchoStateNetwork:
