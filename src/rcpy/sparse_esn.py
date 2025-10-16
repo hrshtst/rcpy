@@ -119,53 +119,30 @@ class SparseEchoStateNetwork:
         print("Initialization complete.")
 
     @ti.kernel
-    def _update_state_and_collect_kernel(self, u: ti.template(), collected_states: ti.template(), washout_period: int):
-        for t in range(u.shape[0]):
-            pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
+    def _update_state_kernel(self, u_t: ti.template()):
+        pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
 
-            for i in ti.static(range(self.W_res_rows.shape[0])):
-                row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
-                pre_activation[row] += val * self.x[col]
+        for i in range(self.W_res_rows.shape[0]):
+            row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
+            pre_activation[row] += val * self.x[col]
 
-            for i in ti.static(range(self.cfg.n_reservoir)):
-                in_val = 0.0
-                for j in ti.static(range(self.cfg.n_input)):
-                    in_val += self.W_in[i, j] * u[t, j]
-                pre_activation[i] += in_val
+        for i in range(self.cfg.n_reservoir):
+            in_val = 0.0
+            for j in ti.static(range(self.cfg.n_input)):
+                in_val += self.W_in[i, j] * u_t[j]
+            pre_activation[i] += in_val
 
-            for i in ti.static(range(self.cfg.n_reservoir)):
-                new_x_i = ti.tanh(pre_activation[i])
-                self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
-
-            if t >= washout_period:
-                for i in ti.static(range(self.cfg.n_reservoir)):
-                    collected_states[t - washout_period, i] = self.x[i]
+        for i in range(self.cfg.n_reservoir):
+            new_x_i = ti.tanh(pre_activation[i])
+            self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
 
     @ti.kernel
-    def _predict_kernel(self, test_data: ti.template(), predictions: ti.template()):
-        for t in range(test_data.shape[0]):
-            # Update state
-            pre_activation = ti.Vector([0.0 for _ in range(self.cfg.n_reservoir)], dt=self.dtype)
-            for i in ti.static(range(self.W_res_rows.shape[0])):
-                row, col, val = self.W_res_rows[i], self.W_res_cols[i], self.W_res_vals[i]
-                pre_activation[row] += val * self.x[col]
-
-            for i in ti.static(range(self.cfg.n_reservoir)):
-                in_val = 0.0
-                for j in ti.static(range(self.cfg.n_input)):
-                    in_val += self.W_in[i, j] * test_data[t, j]
-                pre_activation[i] += in_val
-
-            for i in ti.static(range(self.cfg.n_reservoir)):
-                new_x_i = ti.tanh(pre_activation[i])
-                self.x[i] = (1 - self.cfg.leaking_rate) * self.x[i] + self.cfg.leaking_rate * new_x_i
-
-            # Get output
-            for i in ti.static(range(self.cfg.n_output)):
-                out = 0.0
-                for j in ti.static(range(self.cfg.n_reservoir)):
-                    out += self.W_out[i, j] * self.x[j]
-                predictions[t, i] = out
+    def _get_output_kernel(self) -> ti.types.vector(1, ti.f32):
+        output = ti.Vector([0.0 for _ in range(self.cfg.n_output)], dt=self.dtype)
+        for i in ti.static(range(self.cfg.n_output)):
+            for j in range(self.cfg.n_reservoir):
+                output[i] += self.W_out[i, j] * self.x[j]
+        return output
 
     def fit(self, train_input, target_data, conf):
         washout_period = conf.data.washout_period
@@ -173,16 +150,20 @@ class SparseEchoStateNetwork:
         print(f"\nStarting training with washout period of {washout_period}...")
 
         n_samples = train_input.shape[0]
-        collected_states_ti = ti.field(dtype=self.dtype, shape=(n_samples - washout_period, self.cfg.n_reservoir))
+        collected_states = np.zeros((n_samples - washout_period, self.cfg.n_reservoir), dtype=np.float32)
+
         train_input_ti = ti.field(dtype=self.dtype, shape=train_input.shape)
         train_input_ti.from_numpy(train_input.astype(np.float32))
 
         print("  Collecting reservoir states...")
         self.x.fill(0)
-        self._update_state_and_collect_kernel(train_input_ti, collected_states_ti, washout_period)
+        for t in range(n_samples):
+            u_t = ti.Vector([train_input_ti[t, i] for i in ti.static(range(self.cfg.n_input))])
+            self._update_state_kernel(u_t)
+            if t >= washout_period:
+                collected_states[t - washout_period] = self.x.to_numpy()
         print("  State collection complete.")
 
-        collected_states = collected_states_ti.to_numpy()
         X_T = collected_states.T
         Y_T = target_data[washout_period:].T
 
@@ -195,12 +176,16 @@ class SparseEchoStateNetwork:
 
     def predict(self, test_data, conf):
         n_samples = test_data.shape[0]
-        predictions_ti = ti.field(dtype=self.dtype, shape=(n_samples, self.cfg.n_output))
+        predictions = np.zeros((n_samples, self.cfg.n_output), dtype=np.float32)
+
         test_data_ti = ti.field(dtype=self.dtype, shape=test_data.shape)
         test_data_ti.from_numpy(test_data.astype(np.float32))
 
         print(f"\nStarting prediction (Sparse Taichi ESN)...")
-        self._predict_kernel(test_data_ti, predictions_ti)
+        for t in range(n_samples):
+            u_t = ti.Vector([test_data_ti[t, i] for i in ti.static(range(self.cfg.n_input))])
+            self._update_state_kernel(u_t)
+            predictions[t] = self._get_output_kernel().to_numpy()
 
         print("  Prediction complete.")
-        return predictions_ti.to_numpy()
+        return predictions
