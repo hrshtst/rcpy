@@ -6,6 +6,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+# --- Plotting Configuration ---
+SUPTITLE_SIZE = 26
+TITLE_SIZE = 20
+LABEL_SIZE = 16
+TICK_SIZE = 14
+LEGEND_SIZE = 14
+
 
 def main():
     """
@@ -13,7 +20,18 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Generate plots from sparse ESN benchmark results.")
     parser.add_argument("csv_path", type=str, help="Path to the benchmark CSV file.")
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        default=".png",
+        help="Suffix for the output plots (e.g., .png, .pdf, .svg). Default is .png.",
+    )
     args = parser.parse_args()
+
+    # Ensure suffix starts with a dot if not empty and doesn't already have one
+    suffix = args.suffix
+    if suffix and not suffix.startswith("."):
+        suffix = "." + suffix
 
     # --- 1. Load and Preprocess Data ---
     if not os.path.exists(args.csv_path):
@@ -28,15 +46,29 @@ def main():
     df["connectivity"] = 1.0 - df["sparsity"]
 
     # --- 2. Generate Plots ---
-    generate_plots(df, output_dir)
+    generate_plots(df, output_dir, suffix)
 
     # --- 3. Generate LaTeX Table ---
     generate_latex_summary(df, output_dir)
 
 
-def generate_plots(df, output_dir):
+def generate_plots(df, output_dir, suffix):
     """Generates and saves all performance and MSE plots."""
     sns.set_theme(style="whitegrid")
+
+    # Update global font sizes via rcParams
+    plt.rcParams.update(
+        {
+            "axes.titlesize": TITLE_SIZE,
+            "axes.labelsize": LABEL_SIZE,
+            "xtick.labelsize": TICK_SIZE,
+            "ytick.labelsize": TICK_SIZE,
+            "legend.fontsize": LEGEND_SIZE,
+            "legend.title_fontsize": LEGEND_SIZE,
+            "figure.titlesize": SUPTITLE_SIZE,
+        }
+    )
+
     time_metrics = [
         ("init_time", "Initialization Time"),
         ("fit_time", "Training Time"),
@@ -50,22 +82,23 @@ def generate_plots(df, output_dir):
         fig_perf, axes_perf = plt.subplots(2, 2, figsize=(20, 15))
         fig_perf.suptitle(
             f"Dense vs. Sparse ESN Performance (Connectivity = {connectivity:.3f})\n(Lines are Mean, Shaded areas are 95% CI)",
-            fontsize=20,
             y=0.97,
         )
         for i, (metric, title) in enumerate(time_metrics):
             ax = axes_perf.flatten()[i]
             sns.lineplot(data=group, x="n_reservoir", y=metric, hue="version", style="version", marker="o", ax=ax)
-            ax.set_title(title, fontsize=14)
-            ax.set_xlabel("Reservoir Size", fontsize=12)
-            ax.set_ylabel("Time (seconds)", fontsize=12)
+            ax.set_title(title)
+            ax.set_xlabel("Reservoir Size")
+            ax.set_ylabel("Time (seconds)")
             ax.set_xscale("log", base=2)
             ax.set_yscale("log")
-            ax.legend(title="Implementation", fontsize=10)
+            ax.legend(title="Implementation")
             ax.grid(True, which="both", ls="--")
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
-        perf_output_filename = os.path.join(output_dir, f"performance_summary_connectivity_{connectivity:.3f}.png")
+        perf_output_filename = os.path.join(
+            output_dir, f"performance_summary_connectivity_{connectivity:.3f}{suffix}"
+        )
         plt.savefig(perf_output_filename)
         print(f"\nCombined performance plot for connectivity {connectivity:.3f} saved to '{perf_output_filename}'")
 
@@ -76,17 +109,18 @@ def generate_plots(df, output_dir):
                 data=group, x="n_reservoir", y=metric, hue="version", style="version", marker="o", ax=ax_single
             )
             ax_single.set_title(
-                f"ESN Benchmark: {title} (Connectivity = {connectivity:.3f})\n(Lines are Mean, Shaded areas are 95% CI)",
-                fontsize=16,
+                f"ESN Benchmark: {title} (Connectivity = {connectivity:.3f})\n(Lines are Mean, Shaded areas are 95% CI)"
             )
-            ax_single.set_xlabel("Reservoir Size (n_reservoir)", fontsize=12)
-            ax_single.set_ylabel("Time (seconds)", fontsize=12)
+            ax_single.set_xlabel("Reservoir Size (n_reservoir)")
+            ax_single.set_ylabel("Time (seconds)")
             ax_single.set_xscale("log", base=2)
             ax_single.set_yscale("log")
             ax_single.legend(title="Implementation")
             ax_single.grid(True, which="both", ls="--")
             plt.tight_layout()
-            single_filename = os.path.join(output_dir, f"benchmark_{metric}_connectivity_{connectivity:.3f}.png")
+            single_filename = os.path.join(
+                output_dir, f"benchmark_{metric}_connectivity_{connectivity:.3f}{suffix}"
+            )
             plt.savefig(single_filename)
             print(f"Individual plot saved to '{single_filename}'")
             plt.close(fig_single)
@@ -94,17 +128,15 @@ def generate_plots(df, output_dir):
         # --- MSE Plot ---
         fig_mse, ax_mse = plt.subplots(figsize=(12, 8))
         sns.lineplot(data=group, x="n_reservoir", y="mse", hue="version", style="version", marker="o", ax=ax_mse)
-        ax_mse.set_title(
-            f"Prediction Accuracy (MSE) vs. Reservoir Size (Connectivity = {connectivity:.3f})", fontsize=16
-        )
-        ax_mse.set_xlabel("Reservoir Size", fontsize=12)
-        ax_mse.set_ylabel("Mean Squared Error (MSE)", fontsize=12)
+        ax_mse.set_title(f"Prediction Accuracy (MSE) vs. Reservoir Size (Connectivity = {connectivity:.3f})")
+        ax_mse.set_xlabel("Reservoir Size")
+        ax_mse.set_ylabel("Mean Squared Error (MSE)")
         ax_mse.set_xscale("log", base=2)
         ax_mse.set_ylim(0.0, 0.005)
         ax_mse.legend(title="Implementation")
         ax_mse.grid(True, which="both", ls="--")
         plt.tight_layout()
-        mse_output_filename = os.path.join(output_dir, f"benchmark_mse_connectivity_{connectivity:.3f}.png")
+        mse_output_filename = os.path.join(output_dir, f"benchmark_mse_connectivity_{connectivity:.3f}{suffix}")
         plt.savefig(mse_output_filename)
         print(f"MSE plot saved to '{mse_output_filename}'")
 
