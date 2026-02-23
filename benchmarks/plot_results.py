@@ -6,6 +6,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+# --- Plotting Configuration ---
+SUPTITLE_SIZE = 26
+TITLE_SIZE = 20
+LABEL_SIZE = 16
+TICK_SIZE = 14
+LEGEND_SIZE = 14
+
 
 def main():
     """
@@ -63,6 +70,20 @@ def main():
 def generate_plots(df, output_dir, suffix):
     """Generates and saves all performance and MSE plots."""
     sns.set_theme(style="whitegrid")
+
+    # Update global font sizes via rcParams
+    plt.rcParams.update(
+        {
+            "axes.titlesize": TITLE_SIZE,
+            "axes.labelsize": LABEL_SIZE,
+            "xtick.labelsize": TICK_SIZE,
+            "ytick.labelsize": TICK_SIZE,
+            "legend.fontsize": LEGEND_SIZE,
+            "legend.title_fontsize": LEGEND_SIZE,
+            "figure.titlesize": SUPTITLE_SIZE,
+        }
+    )
+
     time_metrics = [
         ("init_time", "Initialization Time"),
         ("fit_time", "Training Time"),
@@ -72,16 +93,16 @@ def generate_plots(df, output_dir, suffix):
 
     # Combined Performance Plot
     fig_perf, axes_perf = plt.subplots(2, 2, figsize=(20, 15))
-    fig_perf.suptitle("ESN Benchmark Performance\n(Lines are Mean, Shaded areas are 95% CI)", fontsize=20, y=0.97)
+    fig_perf.suptitle("ESN Benchmark Performance\n(Lines are Mean, Shaded areas are 95% CI)", y=0.97)
     for i, (metric, title) in enumerate(time_metrics):
         ax = axes_perf.flatten()[i]
         sns.lineplot(data=df, x="n_reservoir", y=metric, hue="Configuration", style="Configuration", marker="o", ax=ax)
-        ax.set_title(title, fontsize=14)
-        ax.set_xlabel("Reservoir Size", fontsize=12)
-        ax.set_ylabel("Time (seconds)", fontsize=12)
+        ax.set_title(title)
+        ax.set_xlabel("Reservoir Size")
+        ax.set_ylabel("Time (seconds)")
         ax.set_xscale("log", base=2)
         ax.set_yscale("log")
-        ax.legend(title="Configuration", fontsize=10)
+        ax.legend(title="Configuration")
         ax.grid(True, which="both", ls="--")
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -95,9 +116,9 @@ def generate_plots(df, output_dir, suffix):
         sns.lineplot(
             data=df, x="n_reservoir", y=metric, hue="Configuration", style="Configuration", marker="o", ax=ax_single
         )
-        ax_single.set_title(f"ESN Benchmark: {title}\n(Lines are Mean, Shaded areas are 95% CI)", fontsize=16)
-        ax_single.set_xlabel("Reservoir Size (n_reservoir)", fontsize=12)
-        ax_single.set_ylabel("Time (seconds)", fontsize=12)
+        ax_single.set_title(f"ESN Benchmark: {title}\n(Lines are Mean, Shaded areas are 95% CI)")
+        ax_single.set_xlabel("Reservoir Size (n_reservoir)")
+        ax_single.set_ylabel("Time (seconds)")
         ax_single.set_xscale("log", base=2)
         ax_single.set_yscale("log")
         ax_single.legend(title="Configuration")
@@ -111,9 +132,9 @@ def generate_plots(df, output_dir, suffix):
     # MSE Plot
     fig_mse, ax_mse = plt.subplots(figsize=(12, 8))
     sns.lineplot(data=df, x="n_reservoir", y="mse", hue="Configuration", style="Configuration", marker="o", ax=ax_mse)
-    ax_mse.set_title("Prediction Accuracy (MSE) vs. Reservoir Size", fontsize=16)
-    ax_mse.set_xlabel("Reservoir Size", fontsize=12)
-    ax_mse.set_ylabel("Mean Squared Error (MSE)", fontsize=12)
+    ax_mse.set_title("Prediction Accuracy (MSE) vs. Reservoir Size")
+    ax_mse.set_xlabel("Reservoir Size")
+    ax_mse.set_ylabel("Mean Squared Error (MSE)")
     ax_mse.set_xscale("log", base=2)
     ax_mse.legend(title="Configuration")
     ax_mse.grid(True, which="both", ls="--")
