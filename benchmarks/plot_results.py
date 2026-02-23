@@ -13,7 +13,18 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Generate plots and LaTeX tables from ESN benchmark results.")
     parser.add_argument("csv_path", type=str, help="Path to the benchmark CSV file.")
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        default=".png",
+        help="Suffix for the output plots (e.g., .png, .pdf, .svg). Default is .png.",
+    )
     args = parser.parse_args()
+
+    # Ensure suffix starts with a dot if not empty and doesn't already have one
+    suffix = args.suffix
+    if suffix and not suffix.startswith("."):
+        suffix = "." + suffix
 
     # --- 1. Load and Preprocess Data ---
     if not os.path.exists(args.csv_path):
@@ -43,13 +54,13 @@ def main():
     print("Data loaded and processed. Generating outputs...")
 
     # --- 2. Generate Plots ---
-    generate_plots(df, output_dir)
+    generate_plots(df, output_dir, suffix)
 
     # --- 3. Generate LaTeX Table ---
     generate_latex_summary(df, output_dir)
 
 
-def generate_plots(df, output_dir):
+def generate_plots(df, output_dir, suffix):
     """Generates and saves all performance and MSE plots."""
     sns.set_theme(style="whitegrid")
     time_metrics = [
@@ -74,7 +85,7 @@ def generate_plots(df, output_dir):
         ax.grid(True, which="both", ls="--")
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    perf_output_filename = os.path.join(output_dir, "benchmark_performance_summary.png")
+    perf_output_filename = os.path.join(output_dir, f"benchmark_performance_summary{suffix}")
     plt.savefig(perf_output_filename)
     print(f"\nCombined performance plot saved to '{perf_output_filename}'")
 
@@ -92,7 +103,7 @@ def generate_plots(df, output_dir):
         ax_single.legend(title="Configuration")
         ax_single.grid(True, which="both", ls="--")
         plt.tight_layout()
-        single_filename = os.path.join(output_dir, f"benchmark_{metric}.png")
+        single_filename = os.path.join(output_dir, f"benchmark_{metric}{suffix}")
         plt.savefig(single_filename)
         print(f"Individual plot saved to '{single_filename}'")
         plt.close(fig_single)
@@ -107,7 +118,7 @@ def generate_plots(df, output_dir):
     ax_mse.legend(title="Configuration")
     ax_mse.grid(True, which="both", ls="--")
     plt.tight_layout()
-    mse_output_filename = os.path.join(output_dir, "benchmark_mse_summary.png")
+    mse_output_filename = os.path.join(output_dir, f"benchmark_mse_summary{suffix}")
     plt.savefig(mse_output_filename)
     print(f"MSE plot saved to '{mse_output_filename}'")
 
